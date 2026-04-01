@@ -4,7 +4,7 @@ import { ShoppingCart, Package, User, Phone, MapPin, Truck, ChevronLeft, Chevron
 import { motion, AnimatePresence } from "motion/react";
 import { Toaster, toast } from "sonner";
 import { cn } from "@/src/lib/utils";
-import type { Product, CartItem, Order } from "./types";
+import type { Product, CartItem, Order, UserProfile } from "./types";
 import { 
   auth, 
   db, 
@@ -1021,6 +1021,8 @@ const Admin = () => {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [inlinePriceEditId, setInlinePriceEditId] = useState<string | null>(null);
   const [inlinePriceValue, setInlinePriceValue] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<'products' | 'users'>('products');
+  const [users, setUsers] = useState<UserProfile[]>([]);
 
   const updatePrice = async (id: string, newPrice: number) => {
     if (isNaN(newPrice) || newPrice < 0) {
@@ -1068,6 +1070,33 @@ const Admin = () => {
     });
     return unsubscribe;
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (!isAdmin || activeTab !== 'users') return;
+    const q = query(collection(db, "users"), orderBy("email"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setUsers(snapshot.docs.map(doc => ({ ...doc.data() }) as UserProfile));
+    });
+    return unsubscribe;
+  }, [isAdmin, activeTab]);
+
+  const toggleUserRole = async (uid: string, currentRole: 'admin' | 'client') => {
+    const currentUser = auth.currentUser;
+    if (currentUser?.uid === uid && currentUser?.email === "thecupoftea1000@gmail.com") {
+      toast.error("Ви не можете змінити власну роль");
+      return;
+    }
+
+    try {
+      await updateDoc(doc(db, "users", uid), {
+        role: currentRole === 'admin' ? 'client' : 'admin'
+      });
+      toast.success("Роль оновлено");
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${uid}`);
+      toast.error("Помилка оновлення ролі");
+    }
+  };
 
   const filteredProducts = products.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -1255,47 +1284,69 @@ const Admin = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12">
-      <header className="mb-12 flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Адмін-панель</h1>
-          <p className="text-gray-500">Керування каталогом товарів</p>
+    <div className="max-w-7xl mx-auto px-4 py-6">
+      <header className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex items-baseline gap-3">
+          <h1 className="text-xl font-bold text-gray-900">Адмін-панель</h1>
+          <p className="text-xs text-gray-400 hidden sm:block">Керування каталогом та користувачами</p>
+        </div>
+
+        <div className="flex bg-gray-100 p-1 rounded-xl">
+          <button 
+            onClick={() => setActiveTab('products')}
+            className={cn(
+              "px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
+              activeTab === 'products' ? "bg-white text-black shadow-sm" : "text-gray-400 hover:text-gray-600"
+            )}
+          >
+            Товари
+          </button>
+          <button 
+            onClick={() => setActiveTab('users')}
+            className={cn(
+              "px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
+              activeTab === 'users' ? "bg-white text-black shadow-sm" : "text-gray-400 hover:text-gray-600"
+            )}
+          >
+            Користувачі
+          </button>
         </div>
       </header>
 
-      <div className="grid lg:grid-cols-3 gap-12">
+      {activeTab === 'products' ? (
+        <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1">
-          <form onSubmit={handleAdd} className="bg-white p-8 border border-gray-100 rounded-3xl space-y-6 sticky top-24 max-h-[85vh] overflow-y-auto">
+          <form onSubmit={handleAdd} className="bg-white p-5 border border-gray-100 rounded-3xl space-y-4 sticky top-20 max-h-[85vh] overflow-y-auto shadow-sm">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold">{editingId ? "Редагувати товар" : "Додати товар"}</h2>
+              <h2 className="text-lg font-bold">{editingId ? "Редагувати товар" : "Додати товар"}</h2>
               {editingId && (
                 <button 
                   type="button" 
                   onClick={cancelEdit}
-                  className="text-xs text-gray-400 hover:text-black font-bold uppercase tracking-widest"
+                  className="text-[10px] text-gray-400 hover:text-black font-bold uppercase tracking-widest"
                 >
                   Скасувати
                 </button>
               )}
             </div>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase text-gray-400 tracking-widest">Назва</label>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Назва</label>
                 <input 
                   required
                   type="text" 
                   value={newProduct.name}
                   onChange={e => setNewProduct({...newProduct, name: e.target.value})}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:border-black transition-all"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 outline-none focus:border-black transition-all text-sm"
                 />
               </div>
               
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase text-gray-400 tracking-widest">Категорія</label>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Категорія</label>
                 <select 
                   value={newProduct.category}
                   onChange={e => setNewProduct({...newProduct, category: e.target.value})}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:border-black transition-all bg-white"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 outline-none focus:border-black transition-all bg-white text-sm"
                 >
                   {CATEGORIES.map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
@@ -1303,23 +1354,23 @@ const Admin = () => {
                 </select>
               </div>
 
-              <div className="flex gap-4">
-                <div className="space-y-2 flex-1">
-                  <label className="text-xs font-bold uppercase text-gray-400 tracking-widest">Ціна ($)</label>
+              <div className="flex gap-3">
+                <div className="space-y-1.5 flex-1">
+                  <label className="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Ціна ($)</label>
                   <input 
                     required
                     type="number" 
                     value={newProduct.price}
                     onChange={e => setNewProduct({...newProduct, price: Number(e.target.value)})}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:border-black transition-all"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 outline-none focus:border-black transition-all text-sm"
                   />
                 </div>
-                <div className="space-y-2 flex-1">
-                  <label className="text-xs font-bold uppercase text-gray-400 tracking-widest">Наявність</label>
+                <div className="space-y-1.5 flex-1">
+                  <label className="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Наявність</label>
                   <select 
                     value={newProduct.inStock ? "true" : "false"}
                     onChange={e => setNewProduct({...newProduct, inStock: e.target.value === "true"})}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:border-black transition-all bg-white"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 outline-none focus:border-black transition-all bg-white text-sm"
                   >
                     <option value="true">В наявності</option>
                     <option value="false">Немає</option>
@@ -1327,31 +1378,33 @@ const Admin = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase text-gray-400 tracking-widest">Опис (опціонально)</label>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Опис (опціонально)</label>
                 <textarea 
                   value={newProduct.description}
                   onChange={e => setNewProduct({...newProduct, description: e.target.value})}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:border-black transition-all min-h-[100px]"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 outline-none focus:border-black transition-all min-h-[80px] text-sm resize-none"
                   placeholder="Додайте опис товару..."
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase text-gray-400 tracking-widest">Розміри в наявності</label>
-                <div className="flex flex-wrap gap-2 mb-3">
-                  <button type="button" onClick={selectAllSizes} className="text-[10px] px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 transition-all">Вибрати все</button>
-                  <button type="button" onClick={select40_45} className="text-[10px] px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 transition-all">40-45</button>
-                  <button type="button" onClick={clearSizes} className="text-[10px] px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 transition-all">Очистити</button>
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Розміри в наявності</label>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={selectAllSizes} className="text-[9px] text-gray-400 hover:text-black font-bold uppercase">Вибрати все</button>
+                    <button type="button" onClick={select40_45} className="text-[9px] text-gray-400 hover:text-black font-bold uppercase">40-45</button>
+                    <button type="button" onClick={clearSizes} className="text-[9px] text-gray-400 hover:text-black font-bold uppercase">Очистити</button>
+                  </div>
                 </div>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-4 gap-1.5">
                   {AVAILABLE_SIZES.map(size => (
                     <button 
                       key={size}
                       type="button"
                       onClick={() => toggleSize(size)}
                       className={cn(
-                        "py-2 rounded-lg border text-sm font-medium transition-all",
+                        "py-1.5 rounded-lg border text-xs font-medium transition-all",
                         newProduct.sizes?.includes(size) ? "border-black bg-black text-white" : "border-gray-200 hover:border-gray-400"
                       )}
                     >
@@ -1361,9 +1414,9 @@ const Admin = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase text-gray-400 tracking-widest">Фотографії</label>
-                <div className="grid grid-cols-4 gap-2 mb-2">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Фотографії</label>
+                <div className="grid grid-cols-4 gap-1.5">
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -1416,32 +1469,32 @@ const Admin = () => {
                 </div>
               </div>
             </div>
-            <button className="w-full bg-black text-white py-4 rounded-2xl font-bold hover:bg-gray-800 transition-all shadow-lg shadow-gray-100">
+            <button className="w-full bg-black text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition-all shadow-lg shadow-gray-100 text-sm">
               Зберегти товар
             </button>
           </form>
         </div>
 
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white p-6 border border-gray-100 rounded-3xl space-y-4">
-            <div className="flex flex-col md:flex-row gap-4 justify-between">
+        <div className="lg:col-span-2 space-y-4">
+          <div className="bg-white p-4 border border-gray-100 rounded-3xl space-y-3 shadow-sm">
+            <div className="flex flex-col md:flex-row gap-3 justify-between">
               <div className="relative flex-1 min-w-[200px]">
                 <input 
                   type="text"
                   placeholder="Пошук за назвою..."
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 outline-none focus:border-black transition-all text-base font-medium"
+                  className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 outline-none focus:border-black transition-all text-sm font-medium"
                 />
-                <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
               </div>
-              <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
+              <div className="flex gap-1.5 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
                 {["Всі", ...CATEGORIES].map(cat => (
                   <button
                     key={cat}
                     onClick={() => setAdminCategory(cat)}
                     className={cn(
-                      "px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all",
+                      "px-3 py-1.5 rounded-lg text-[10px] font-bold whitespace-nowrap transition-all",
                       adminCategory === cat ? "bg-black text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                     )}
                   >
@@ -1452,31 +1505,31 @@ const Admin = () => {
             </div>
           </div>
 
-          <div className="bg-white border border-gray-100 rounded-3xl overflow-hidden">
+          <div className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm">
             <table className="w-full text-left">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  <th className="px-6 py-4 text-xs font-bold uppercase text-gray-400 tracking-widest">Товар</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase text-gray-400 tracking-widest">Ціна</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase text-gray-400 tracking-widest">Статус</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase text-gray-400 tracking-widest">Дії</th>
+                  <th className="px-4 py-3 text-[10px] font-bold uppercase text-gray-400 tracking-widest">Товар</th>
+                  <th className="px-4 py-3 text-[10px] font-bold uppercase text-gray-400 tracking-widest">Ціна</th>
+                  <th className="px-4 py-3 text-[10px] font-bold uppercase text-gray-400 tracking-widest">Статус</th>
+                  <th className="px-4 py-3 text-[10px] font-bold uppercase text-gray-400 tracking-widest text-right">Дії</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filteredProducts.map(product => (
-                  <tr key={product.id} className={cn(editingId === product.id && "bg-gray-50")}>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-lg bg-gray-50 border border-gray-100 overflow-hidden flex items-center justify-center">
+                  <tr key={product.id} className={cn("hover:bg-gray-50/50 transition-colors", editingId === product.id && "bg-gray-50")}>
+                    <td className="px-4 py-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-gray-50 border border-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
                           <img src={product.images[0]} className="max-w-full max-h-full object-contain p-0.5" referrerPolicy="no-referrer" />
                         </div>
-                        <div>
-                          <p className="font-bold text-sm">{product.name}</p>
-                          <p className="text-xs text-gray-400">{product.category}</p>
+                        <div className="min-w-0">
+                          <p className="font-bold text-xs truncate">{product.name}</p>
+                          <p className="text-[10px] text-gray-400">{product.category}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2">
                       {inlinePriceEditId === product.id ? (
                         <div className="flex flex-col gap-1 animate-in fade-in slide-in-from-left-2">
                           <div className="flex items-center gap-1">
@@ -1530,7 +1583,7 @@ const Admin = () => {
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2">
                       <button
                         onClick={() => toggleStock(product.id, product.inStock)}
                         className={cn(
@@ -1544,8 +1597,8 @@ const Admin = () => {
                         {product.inStock ? "В наявності" : "Немає"}
                       </button>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
+                    <td className="px-4 py-2 text-right">
+                      <div className="flex justify-end items-center gap-1.5">
                         {confirmDeleteId === product.id ? (
                           <div className="flex items-center gap-1 bg-red-50 p-1 rounded-xl border border-red-100 animate-in fade-in zoom-in-95">
                             <button 
@@ -1565,17 +1618,17 @@ const Admin = () => {
                           <>
                             <button 
                               onClick={() => startEdit(product)}
-                              className="p-2 hover:bg-gray-100 text-gray-400 hover:text-black rounded-full transition-colors"
+                              className="p-1.5 hover:bg-gray-100 text-gray-400 hover:text-black rounded-lg transition-colors"
                               title="Редагувати"
                             >
-                              <Settings className="w-4 h-4" />
+                              <Settings className="w-3.5 h-3.5" />
                             </button>
                             <button 
                               onClick={() => setConfirmDeleteId(product.id)}
-                              className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-colors"
+                              className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors"
                               title="Видалити"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </>
                         )}
@@ -1593,6 +1646,73 @@ const Admin = () => {
           </div>
         </div>
       </div>
+      ) : (
+        <div className="bg-white border border-gray-100 rounded-[32px] overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-4">
+          <div className="p-5 border-b border-gray-100 bg-gray-50/50">
+            <h2 className="text-lg font-bold text-gray-900">Керування правами доступу</h2>
+            <p className="text-xs text-gray-400 mt-1">Тут ви можете призначити інших користувачів адміністраторами.</p>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-gray-50/50 border-b border-gray-100">
+                  <th className="px-4 py-3 text-[10px] font-bold uppercase text-gray-400 tracking-widest">Користувач</th>
+                  <th className="px-4 py-3 text-[10px] font-bold uppercase text-gray-400 tracking-widest">Email</th>
+                  <th className="px-4 py-3 text-[10px] font-bold uppercase text-gray-400 tracking-widest">Роль</th>
+                  <th className="px-4 py-3 text-[10px] font-bold uppercase text-gray-400 tracking-widest text-right">Дії</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {users.map(u => (
+                  <tr key={u.uid} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-4 py-2">
+                      <div className="flex items-center gap-2">
+                        {u.photoURL ? (
+                          <img src={u.photoURL} className="w-8 h-8 rounded-full border border-gray-100" referrerPolicy="no-referrer" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+                            <User className="w-4 h-4" />
+                          </div>
+                        )}
+                        <span className="font-bold text-sm">{u.displayName || 'Без імені'}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-2 text-xs text-gray-500">{u.email}</td>
+                    <td className="px-4 py-2">
+                      <span className={cn(
+                        "px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                        u.role === 'admin' ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-600"
+                      )}>
+                        {u.role === 'admin' ? "Адміністратор" : "Клієнт"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 text-right">
+                      <button
+                        onClick={() => toggleUserRole(u.uid, u.role)}
+                        disabled={u.email === "thecupoftea1000@gmail.com"}
+                        className={cn(
+                          "px-4 py-2 rounded-xl text-xs font-bold transition-all",
+                          u.role === 'admin' 
+                            ? "bg-gray-100 text-gray-600 hover:bg-gray-200" 
+                            : "bg-black text-white hover:bg-gray-800"
+                        )}
+                      >
+                        {u.role === 'admin' ? "Зняти права" : "Зробити адміном"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {users.length === 0 && (
+              <div className="p-12 text-center text-gray-400">
+                Користувачів не знайдено
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
