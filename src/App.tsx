@@ -62,6 +62,42 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({ user: null, loading: true, isAdmin: false });
 
+const CurrencyContext = createContext<{ rate: number; formatUAH: (usd: number) => string }>({ 
+  rate: 41.5, 
+  formatUAH: (usd) => Math.round(usd * 41.5).toLocaleString('uk-UA') + ' грн' 
+});
+
+const useCurrency = () => useContext(CurrencyContext);
+
+const CurrencyProvider = ({ children }: { children: React.ReactNode }) => {
+  const [rate, setRate] = useState(41.5);
+
+  useEffect(() => {
+    const fetchRate = async () => {
+      try {
+        const response = await fetch('https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=USD&json');
+        const data = await response.json();
+        if (data && data[0] && data[0].rate) {
+          setRate(data[0].rate);
+        }
+      } catch (error) {
+        console.error("Failed to fetch exchange rate:", error);
+      }
+    };
+    fetchRate();
+  }, []);
+
+  const formatUAH = (usd: number) => {
+    return Math.round(usd * rate).toLocaleString('uk-UA') + ' грн';
+  };
+
+  return (
+    <CurrencyContext.Provider value={{ rate, formatUAH }}>
+      {children}
+    </CurrencyContext.Provider>
+  );
+};
+
 const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -179,38 +215,45 @@ const Navbar = ({ cartCount }: { cartCount: number }) => {
   );
 };
 
-const ProductCard: React.FC<{ product: Product; onOpen: (p: Product) => void }> = ({ product, onOpen }) => (
-  <motion.div 
-    layout
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="group cursor-pointer"
-    onClick={() => onOpen(product)}
-  >
-    <div className="aspect-[3/4] overflow-hidden rounded-2xl bg-gray-50 relative flex items-center justify-center">
-      <img 
-        src={product.images[0]} 
-        alt={product.name}
-        className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-500"
-        referrerPolicy="no-referrer"
-      />
-      {!product.inStock && (
-        <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
-          <span className="text-sm font-bold uppercase tracking-widest text-gray-500">Немає в наявності</span>
-        </div>
-      )}
-    </div>
-    <div className="mt-4 space-y-1">
-      <div className="flex justify-between items-start">
-        <h3 className="font-medium text-gray-900">{product.name}</h3>
-        <span className="text-black font-bold">${product.price}</span>
+const ProductCard: React.FC<{ product: Product; onOpen: (p: Product) => void }> = ({ product, onOpen }) => {
+  const { formatUAH } = useCurrency();
+  return (
+    <motion.div 
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="group cursor-pointer"
+      onClick={() => onOpen(product)}
+    >
+      <div className="aspect-[3/4] overflow-hidden rounded-2xl bg-gray-50 relative flex items-center justify-center">
+        <img 
+          src={product.images[0]} 
+          alt={product.name}
+          className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-500"
+          referrerPolicy="no-referrer"
+        />
+        {!product.inStock && (
+          <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
+            <span className="text-sm font-bold uppercase tracking-widest text-gray-500">Немає в наявності</span>
+          </div>
+        )}
       </div>
-      <p className="text-xs text-gray-500 uppercase tracking-wider">{product.category}</p>
-    </div>
-  </motion.div>
-);
+      <div className="mt-4 space-y-1">
+        <div className="flex justify-between items-start">
+          <h3 className="font-medium text-gray-900">{product.name}</h3>
+          <div className="text-right">
+            <div className="text-black font-bold">${product.price}</div>
+            <div className="text-[10px] text-gray-400 font-medium">{formatUAH(product.price)}</div>
+          </div>
+        </div>
+        <p className="text-xs text-gray-500 uppercase tracking-wider">{product.category}</p>
+      </div>
+    </motion.div>
+  );
+};
 
 const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: Product; onClose: () => void; onAddToCart: (item: CartItem) => void; cartItems: CartItem[] }) => {
+  const { formatUAH } = useCurrency();
   const [individualQuantities, setIndividualQuantities] = useState<Record<string, number>>(
     product.sizes.reduce((acc, size) => ({ ...acc, [size]: 0 }), {})
   );
@@ -379,7 +422,10 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
           <div className="p-8 flex flex-col max-h-[90vh] overflow-y-auto">
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-gray-900">{product.name}</h2>
-              <p className="text-black font-bold text-xl mt-1">${product.price} <span className="text-sm text-gray-400 font-normal">/ пара</span></p>
+              <div className="flex items-baseline gap-2 mt-1">
+                <p className="text-black font-bold text-xl">${product.price} <span className="text-sm text-gray-400 font-normal">/ пара</span></p>
+                <p className="text-gray-400 text-sm font-medium">({formatUAH(product.price)})</p>
+              </div>
               {product.description && (
                 <p className="text-sm text-gray-500 mt-4 leading-relaxed">{product.description}</p>
               )}
@@ -455,7 +501,7 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
                 disabled={Object.values(individualQuantities).every(q => q === 0)}
                 className="w-full bg-black hover:bg-gray-800 text-white py-4 rounded-2xl font-bold transition-all shadow-lg shadow-gray-200 disabled:opacity-50 disabled:shadow-none"
               >
-                Додати в кошик — ${totalIndividualPrice}
+                Додати в кошик — ${totalIndividualPrice} ({formatUAH(totalIndividualPrice)})
               </button>
               <button 
                 onClick={onClose}
@@ -556,6 +602,7 @@ const Catalog = ({ onAddToCart, cartItems }: { onAddToCart: (item: CartItem) => 
 };
 
 const Cart = ({ items, onRemove, onClear, onUpdateQuantity }: { items: CartItem[]; onRemove: (id: string) => void; onClear: () => void; onUpdateQuantity: (id: string, delta: number) => void }) => {
+  const { formatUAH } = useCurrency();
   const [step, setStep] = useState<'cart' | 'checkout' | 'success'>('cart');
   const [formData, setFormData] = useState({ name: '', phone: '', city: '', delivery: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -678,62 +725,72 @@ ${items.map(item => `- ${item.name} (${item.type === 'pack' ? 'Ростовка'
 
           {step === 'cart' ? (
             <div className="space-y-6">
-              {Object.entries(groupedItems).map(([productId, group]) => (
-                <div key={productId} className="bg-white border border-gray-100 rounded-3xl overflow-hidden">
-                  <div className="flex items-center gap-4 p-4 bg-gray-50/50 border-b border-gray-100">
-                    <div className="w-12 h-12 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-                      <img src={group.image} alt={group.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                    </div>
-                    <h3 className="text-base font-bold text-gray-900">{group.name}</h3>
-                  </div>
-                  <div className="divide-y divide-gray-50">
-                    {group.items.map(item => (
-                      <div key={item.id} className="flex items-center justify-between p-4 hover:bg-gray-50/30 transition-colors">
-                        <div className="flex items-center gap-4 flex-1">
-                          <div className="flex flex-col">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-bold text-gray-900">Розмір: {item.size}</span>
-                              {item.type === 'pack' && (
-                                <span className="text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                                  Ростовка
-                                </span>
-                              )}
-                            </div>
-                            <span className="text-[10px] text-gray-400 mt-0.5">${item.price} / {item.type === 'pack' ? 'ящ' : 'пара'}</span>
-                          </div>
+              {Object.entries(groupedItems).map(([productId, group]) => {
+                const groupTotal = group.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+                return (
+                  <div key={productId} className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm">
+                    <div className="flex items-center justify-between p-4 bg-gray-50/50 border-b border-gray-100">
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 bg-gray-200 rounded-xl overflow-hidden flex-shrink-0 border border-gray-100">
+                          <img src={group.image} alt={group.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                         </div>
-                        
-                        <div className="flex items-center gap-6">
-                          <div className="flex items-center border border-gray-200 rounded-lg bg-white h-9">
-                            <button 
-                              onClick={() => onUpdateQuantity(item.id, -1)}
-                              className="px-2 h-full hover:bg-gray-50 rounded-l-lg transition-colors"
-                            >
-                              <Minus className="w-2.5 h-2.5" />
-                            </button>
-                            <span className="w-8 text-center font-bold text-xs">{item.quantity}</span>
-                            <button 
-                              onClick={() => onUpdateQuantity(item.id, 1)}
-                              className="px-2 h-full hover:bg-gray-50 rounded-r-lg transition-colors"
-                            >
-                              <Plus className="w-2.5 h-2.5" />
-                            </button>
-                          </div>
-                          <div className="w-20 text-right font-bold text-sm text-gray-900">
-                            ${item.price * item.quantity}
-                          </div>
-                          <button 
-                            onClick={() => onRemove(item.id)}
-                            className="p-2 text-gray-300 hover:text-red-500 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                        <div>
+                          <h3 className="text-base font-bold text-gray-900 leading-tight">{group.name}</h3>
+                          <p className="text-[10px] text-gray-400 mt-0.5">
+                            Ціна: <span className="font-bold text-gray-600">${group.items[0].price}</span> 
+                            <span className="mx-1">/</span> 
+                            {formatUAH(group.items[0].price)}
+                          </p>
                         </div>
                       </div>
-                    ))}
+                      <div className="text-right">
+                        <div className="text-base font-black text-gray-900">${groupTotal}</div>
+                        <div className="text-[10px] text-gray-400 font-medium">{formatUAH(groupTotal)}</div>
+                      </div>
+                    </div>
+                    <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2 bg-white">
+                      {group.items.map(item => (
+                        <div key={item.id} className="flex items-center justify-between bg-gray-50/50 p-2.5 rounded-2xl border border-gray-100/50 hover:border-gray-200 transition-colors">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center shadow-sm">
+                              <span className="text-xs font-black text-gray-900">{item.size}</span>
+                            </div>
+                            {item.type === 'pack' && (
+                              <span className="text-[8px] bg-black text-white px-1.5 py-0.5 rounded-md font-bold uppercase tracking-tighter">
+                                Пак
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center border border-gray-200 rounded-xl bg-white h-8 overflow-hidden shadow-sm">
+                              <button 
+                                onClick={() => onUpdateQuantity(item.id, -1)}
+                                className="px-2 h-full hover:bg-gray-50 transition-colors text-gray-400 hover:text-black"
+                              >
+                                <Minus className="w-2.5 h-2.5" />
+                              </button>
+                              <span className="w-6 text-center font-bold text-[11px] text-gray-900">{item.quantity}</span>
+                              <button 
+                                onClick={() => onUpdateQuantity(item.id, 1)}
+                                className="px-2 h-full hover:bg-gray-50 transition-colors text-gray-400 hover:text-black"
+                              >
+                                <Plus className="w-2.5 h-2.5" />
+                              </button>
+                            </div>
+                            <button 
+                              onClick={() => onRemove(item.id)}
+                              className="p-1.5 text-gray-300 hover:text-red-500 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               <div className="flex justify-end">
                 <button 
@@ -818,7 +875,10 @@ ${items.map(item => `- ${item.name} (${item.type === 'pack' ? 'Ростовка'
               <div className="h-px bg-white/10" />
               <div className="flex justify-between text-xl font-bold">
                 <span>Разом</span>
-                <span>${total}</span>
+                <div className="text-right">
+                  <div>${total}</div>
+                  <div className="text-xs text-gray-400 font-medium">{formatUAH(total)}</div>
+                </div>
               </div>
             </div>
 
@@ -899,7 +959,7 @@ function SortableImage({ url, index, onRemove }: SortableImageProps) {
       <img
         src={url}
         alt={`Product ${index}`}
-        className="w-full h-full object-cover"
+        className="w-full h-full object-contain p-1"
         referrerPolicy="no-referrer"
       />
       <div 
@@ -930,6 +990,7 @@ function SortableImage({ url, index, onRemove }: SortableImageProps) {
 
 const Admin = () => {
   const { isAdmin, loading: authLoading } = useAuth();
+  const { formatUAH } = useCurrency();
   const [products, setProducts] = useState<Product[]>([]);
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -991,7 +1052,8 @@ const Admin = () => {
     const uploadedUrls: string[] = [];
 
     try {
-      const folder = editingId || `new_${uploadSessionId}`;
+      const productName = (newProduct.name || "").trim().replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const folder = productName || editingId || `new_${uploadSessionId}`;
       for (const file of Array.from(files)) {
         // Use filename directly within a product-specific folder to prevent duplicates
         // but allow overwriting if the same file is uploaded again for the same product
@@ -1314,15 +1376,15 @@ const Admin = () => {
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white p-6 border border-gray-100 rounded-3xl space-y-4">
             <div className="flex flex-col md:flex-row gap-4 justify-between">
-              <div className="relative flex-1">
+              <div className="relative flex-1 min-w-[200px]">
                 <input 
                   type="text"
                   placeholder="Пошук за назвою..."
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 outline-none focus:border-black transition-all text-sm"
+                  className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 outline-none focus:border-black transition-all text-base font-medium"
                 />
-                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
               </div>
               <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
                 {["Всі", ...CATEGORIES].map(cat => (
@@ -1356,8 +1418,8 @@ const Admin = () => {
                   <tr key={product.id} className={cn(editingId === product.id && "bg-gray-50")}>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden">
-                          <img src={product.images[0]} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        <div className="w-12 h-12 rounded-lg bg-gray-50 border border-gray-100 overflow-hidden flex items-center justify-center">
+                          <img src={product.images[0]} className="max-w-full max-h-full object-contain p-0.5" referrerPolicy="no-referrer" />
                         </div>
                         <div>
                           <p className="font-bold text-sm">{product.name}</p>
@@ -1365,7 +1427,10 @@ const Admin = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium">${product.price}</td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-bold">${product.price}</div>
+                      <div className="text-[10px] text-gray-400 font-medium">{formatUAH(product.price)}</div>
+                    </td>
                     <td className="px-6 py-4">
                       <span className={cn(
                         "px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
@@ -1455,20 +1520,22 @@ export default function App() {
   const clearCart = () => setCart([]);
 
   return (
-    <AuthProvider>
-      <Router>
-        <div className="min-h-screen bg-white font-sans text-gray-900">
-          <Navbar cartCount={cart.reduce((acc, item) => acc + item.quantity, 0)} />
-          <main>
-            <Routes>
-              <Route path="/" element={<Catalog onAddToCart={addToCart} cartItems={cart} />} />
-              <Route path="/cart" element={<Cart items={cart} onRemove={removeFromCart} onClear={clearCart} onUpdateQuantity={updateQuantity} />} />
-              <Route path="/admin" element={<Admin />} />
-            </Routes>
-          </main>
-          <Toaster position="bottom-right" />
-        </div>
-      </Router>
-    </AuthProvider>
+    <CurrencyProvider>
+      <AuthProvider>
+        <Router>
+          <div className="min-h-screen bg-white font-sans text-gray-900">
+            <Navbar cartCount={cart.reduce((acc, item) => acc + item.quantity, 0)} />
+            <main>
+              <Routes>
+                <Route path="/" element={<Catalog onAddToCart={addToCart} cartItems={cart} />} />
+                <Route path="/cart" element={<Cart items={cart} onRemove={removeFromCart} onClear={clearCart} onUpdateQuantity={updateQuantity} />} />
+                <Route path="/admin" element={<Admin />} />
+              </Routes>
+            </main>
+            <Toaster position="bottom-right" />
+          </div>
+        </Router>
+      </AuthProvider>
+    </CurrencyProvider>
   );
 }
