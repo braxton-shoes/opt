@@ -81,7 +81,7 @@ service cloud.firestore {
     function isValidProduct(data) {
       return hasRequiredFields(['id', 'name', 'category', 'price', 'inStock', 'sizes', 'images']) &&
              data.id is string && data.name is string && data.category is string &&
-             data.price is number && data.price > 0 &&
+             data.price is number && data.price >= 0 &&
              data.inStock is bool &&
              data.sizes is list && data.images is list;
     }
