@@ -34,6 +34,24 @@ import {
   getDownloadURL
 } from "./firebase";
 
+import { 
+  DndContext, 
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  horizontalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
 // --- Auth Context ---
 
 interface AuthContextType {
@@ -800,6 +818,68 @@ const CATEGORIES = [
 
 const AVAILABLE_SIZES = ["39", "40", "41", "42", "43", "44", "45", "46"];
 
+interface SortableImageProps {
+  key?: React.Key;
+  url: string;
+  index: number;
+  onRemove: (index: number) => void;
+}
+
+function SortableImage({ url, index, onRemove }: SortableImageProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: url });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 1,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="relative group aspect-square rounded-xl overflow-hidden bg-gray-100 border border-gray-200"
+    >
+      <img
+        src={url}
+        alt={`Product ${index}`}
+        className="w-full h-full object-cover"
+        referrerPolicy="no-referrer"
+      />
+      <div 
+        {...attributes} 
+        {...listeners}
+        className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors cursor-move flex items-center justify-center"
+      >
+        <div className="opacity-0 group-hover:opacity-100 bg-white/90 p-1.5 rounded-lg shadow-sm">
+          <ImageIcon className="w-4 h-4 text-gray-600" />
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove(index);
+        }}
+        className="absolute top-2 right-2 p-1.5 bg-white/90 rounded-lg text-red-500 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-50"
+      >
+        <Trash2 className="w-4 h-4" />
+      </button>
+      <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/50 text-white text-[10px] rounded-full backdrop-blur-sm">
+        {index + 1}
+      </div>
+    </div>
+  );
+}
+
 const Admin = () => {
   const { isAdmin, loading: authLoading } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
@@ -898,33 +978,77 @@ const Admin = () => {
     }
   };
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setNewProduct((prev) => {
+        const images = prev.images || [];
+        const oldIndex = images.indexOf(active.id as string);
+        const newIndex = images.indexOf(over.id as string);
+        return {
+          ...prev,
+          images: arrayMove(images, oldIndex, newIndex),
+        };
+      });
+    }
+  };
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProduct.images?.length) {
       toast.error("Додайте хоча б одне фото");
       return;
     }
+    if (!newProduct.sizes?.length) {
+      toast.error("Виберіть хоча б один розмір");
+      return;
+    }
+
+    const toastId = toast.loading(editingId ? "Оновлення товару..." : "Додавання товару...");
 
     try {
       const productData = {
-        ...newProduct
+        name: newProduct.name?.trim() || "",
+        category: newProduct.category || CATEGORIES[0],
+        price: Number(newProduct.price) || 0,
+        sizes: newProduct.sizes || [],
+        images: newProduct.images || [],
+        inStock: !!newProduct.inStock,
+        description: newProduct.description?.trim() || ""
       };
 
       if (editingId) {
-        const { id, ...updateData } = productData as any;
-        await updateDoc(doc(db, "products", editingId), updateData);
-        toast.success("Товар оновлено");
-        setEditingId(null);
-      } else {
-        await addDoc(collection(db, "products"), {
+        await updateDoc(doc(db, "products", editingId), {
           ...productData,
-          id: Math.random().toString(36).substr(2, 9),
+          id: editingId
         });
-        toast.success("Товар додано");
+        toast.success("Товар оновлено", { id: toastId });
+      } else {
+        const newDocRef = doc(collection(db, "products"));
+        await setDoc(newDocRef, {
+          ...productData,
+          id: newDocRef.id
+        });
+        toast.success("Товар додано", { id: toastId });
       }
       
       setNewProduct(initialFormState);
+      setEditingId(null);
     } catch (err) {
+      console.error("Error saving product:", err);
+      toast.error("Помилка при збереженні", { id: toastId });
       handleFirestoreError(err, editingId ? OperationType.UPDATE : OperationType.CREATE, "products");
     }
   };
@@ -1063,18 +1187,29 @@ const Admin = () => {
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase text-gray-400 tracking-widest">Фотографії</label>
                 <div className="grid grid-cols-4 gap-2 mb-2">
-                  {newProduct.images?.map((img, idx) => (
-                    <div key={idx} className="aspect-square rounded-lg bg-gray-100 overflow-hidden border border-gray-200 relative group">
-                      <img src={img} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                      <button 
-                        type="button"
-                        onClick={() => setNewProduct(prev => ({ ...prev, images: prev.images?.filter((_, i) => i !== idx) }))}
-                        className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={newProduct.images || []}
+                      strategy={horizontalListSortingStrategy}
+                    >
+                      {(newProduct.images || []).map((url, index) => (
+                        <SortableImage
+                          key={url}
+                          url={url as string}
+                          index={index}
+                          onRemove={(idx: number) => setNewProduct(prev => ({
+                            ...prev,
+                            images: (prev.images || []).filter((_, i) => i !== idx)
+                          }))}
+                        />
+                      ))}
+                    </SortableContext>
+                  </DndContext>
+                  
                   <label 
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
