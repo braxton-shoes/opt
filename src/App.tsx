@@ -1,6 +1,6 @@
 import React, { useState, useEffect, createContext, useContext } from "react";
 import { HashRouter as Router, Routes, Route, Link, Navigate, useLocation } from "react-router-dom";
-import { ShoppingCart, Package, User, Phone, MapPin, Truck, ChevronLeft, ChevronRight, X, Plus, Minus, CheckCircle2, Settings, Image as ImageIcon, Trash2, LogIn, LogOut, Search } from "lucide-react";
+import { ShoppingCart, Package, User, Phone, MapPin, Truck, ChevronLeft, ChevronRight, X, Plus, Minus, CheckCircle2, Settings, Image as ImageIcon, Trash2, LogIn, LogOut, Search, ZoomIn } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Toaster, toast } from "sonner";
 import { cn } from "@/src/lib/utils";
@@ -215,6 +215,7 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
     product.sizes.reduce((acc, size) => ({ ...acc, [size]: 0 }), {})
   );
   const [activeImage, setActiveImage] = useState(0);
+  const [isZoomed, setIsZoomed] = useState(false);
 
   const nextImage = () => {
     setActiveImage(prev => (prev + 1) % product.images.length);
@@ -284,6 +285,34 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <AnimatePresence>
+        {isZoomed && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsZoomed(false)}
+            className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4 cursor-zoom-out"
+          >
+            <motion.img 
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              src={product.images[activeImage]} 
+              alt={product.name} 
+              className="max-w-full max-h-full object-contain"
+              referrerPolicy="no-referrer"
+            />
+            <button 
+              className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+              onClick={() => setIsZoomed(false)}
+            >
+              <X className="w-8 h-8" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <motion.div 
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1 }} 
@@ -303,8 +332,15 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
         
         <div className="grid md:grid-cols-2">
           <div className="bg-gray-50 flex flex-col relative group/gallery">
-            <div className="aspect-[3/4] overflow-hidden flex items-center justify-center p-4 relative">
+            <div 
+              className="aspect-[3/4] overflow-hidden flex items-center justify-center p-4 relative cursor-zoom-in"
+              onClick={() => setIsZoomed(true)}
+            >
               <img src={product.images[activeImage]} alt={product.name} className="max-w-full max-h-full object-contain" referrerPolicy="no-referrer" />
+              
+              <div className="absolute top-4 left-4 p-2 bg-white/80 rounded-full opacity-0 group-hover/gallery:opacity-100 transition-opacity">
+                <ZoomIn className="w-5 h-5 text-gray-600" />
+              </div>
               
               {product.images.length > 1 && (
                 <>
@@ -352,7 +388,7 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
             <div className="flex-1 space-y-6">
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold uppercase text-gray-400 tracking-widest">Виберіть розміри та кількість</label>
+                  <label className="text-xs font-bold uppercase text-gray-400 tracking-widest">Виберіть розміри</label>
                   <div className="flex gap-3">
                     <button 
                       onClick={handleAddAllSizes}
@@ -385,7 +421,7 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
                             )}
                           </div>
                           {current > 0 && (
-                            <span className="text-[10px] text-black font-medium">Додаємо: {current} шт.</span>
+                            <span className="text-[10px] text-black font-medium">Додаємо: {current} пар</span>
                           )}
                         </div>
                         <div className="flex items-center border border-gray-200 rounded-xl bg-white shadow-sm">
@@ -525,6 +561,7 @@ const Cart = ({ items, onRemove, onClear, onUpdateQuantity }: { items: CartItem[
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const total = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const totalQuantity = items.reduce((acc, item) => acc + item.quantity, 0);
 
   // Group items by product for a cleaner wholesale view
   const groupedItems = items.reduce((acc, item) => {
@@ -567,7 +604,7 @@ const Cart = ({ items, onRemove, onClear, onUpdateQuantity }: { items: CartItem[
 🚚 *Доставка:* ${formData.delivery}
 
 📦 *Товари:*
-${items.map(item => `- ${item.name} (${item.size}): ${item.quantity} шт. x $${item.price}`).join('\n')}
+${items.map(item => `- ${item.name} (${item.type === 'pack' ? 'Ростовка' : `Розм. ${item.size}`}): ${item.quantity} ${item.type === 'pack' ? 'ящ' : 'пар'} x $${item.price}`).join('\n')}
 
 💰 *Разом:* $${total}
       `;
@@ -643,50 +680,47 @@ ${items.map(item => `- ${item.name} (${item.size}): ${item.quantity} шт. x $${
             <div className="space-y-6">
               {Object.entries(groupedItems).map(([productId, group]) => (
                 <div key={productId} className="bg-white border border-gray-100 rounded-3xl overflow-hidden">
-                  <div className="flex items-center gap-6 p-6 bg-gray-50/50 border-b border-gray-100">
-                    <div className="w-16 h-16 bg-gray-200 rounded-xl overflow-hidden flex-shrink-0">
+                  <div className="flex items-center gap-4 p-4 bg-gray-50/50 border-b border-gray-100">
+                    <div className="w-12 h-12 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
                       <img src={group.image} alt={group.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900">{group.name}</h3>
+                    <h3 className="text-base font-bold text-gray-900">{group.name}</h3>
                   </div>
                   <div className="divide-y divide-gray-50">
                     {group.items.map(item => (
-                      <div key={item.id} className="flex items-center justify-between p-6 hover:bg-gray-50/30 transition-colors">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3">
-                            <span className={cn(
-                              "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider",
-                              item.type === 'pack' ? "bg-gray-100 text-gray-700" : "bg-gray-100 text-gray-700"
-                            )}>
-                              {item.type === 'pack' ? 'Ростовка' : 'Поштучно'}
-                            </span>
-                            {item.size && (
-                              <span className="text-sm font-bold text-gray-700">Розмір: {item.size}</span>
-                            )}
-                          </div>
-                          <div className="mt-1 text-sm text-gray-400">
-                            Ціна: ${item.price} / {item.type === 'pack' ? 'ящ' : 'пара'}
+                      <div key={item.id} className="flex items-center justify-between p-4 hover:bg-gray-50/30 transition-colors">
+                        <div className="flex items-center gap-4 flex-1">
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold text-gray-900">Розмір: {item.size}</span>
+                              {item.type === 'pack' && (
+                                <span className="text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                                  Ростовка
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-gray-400 mt-0.5">${item.price} / {item.type === 'pack' ? 'ящ' : 'пара'}</span>
                           </div>
                         </div>
                         
-                        <div className="flex items-center gap-8">
-                          <div className="flex items-center border border-gray-200 rounded-xl bg-white">
+                        <div className="flex items-center gap-6">
+                          <div className="flex items-center border border-gray-200 rounded-lg bg-white h-9">
                             <button 
                               onClick={() => onUpdateQuantity(item.id, -1)}
-                              className="p-2 hover:bg-gray-50 rounded-l-xl transition-colors"
+                              className="px-2 h-full hover:bg-gray-50 rounded-l-lg transition-colors"
                             >
-                              <Minus className="w-3 h-3" />
+                              <Minus className="w-2.5 h-2.5" />
                             </button>
-                            <span className="w-10 text-center font-bold text-sm">{item.quantity}</span>
+                            <span className="w-8 text-center font-bold text-xs">{item.quantity}</span>
                             <button 
                               onClick={() => onUpdateQuantity(item.id, 1)}
-                              className="p-2 hover:bg-gray-50 rounded-r-xl transition-colors"
+                              className="px-2 h-full hover:bg-gray-50 rounded-r-lg transition-colors"
                             >
-                              <Plus className="w-3 h-3" />
+                              <Plus className="w-2.5 h-2.5" />
                             </button>
                           </div>
-                          <div className="w-24 text-right">
-                            <div className="font-bold text-gray-900">${item.price * item.quantity}</div>
+                          <div className="w-20 text-right font-bold text-sm text-gray-900">
+                            ${item.price * item.quantity}
                           </div>
                           <button 
                             onClick={() => onRemove(item.id)}
@@ -700,6 +734,20 @@ ${items.map(item => `- ${item.name} (${item.size}): ${item.quantity} шт. x $${
                   </div>
                 </div>
               ))}
+
+              <div className="flex justify-end">
+                <button 
+                  onClick={() => {
+                    if (window.confirm("Ви впевнені, що хочете очистити кошик?")) {
+                      onClear();
+                    }
+                  }}
+                  className="flex items-center gap-2 text-gray-400 hover:text-red-500 text-sm font-medium transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Очистити кошик
+                </button>
+              </div>
             </div>
           ) : (
             <form id="checkout-form" onSubmit={handleSubmit} className="space-y-6 bg-white p-8 border border-gray-100 rounded-3xl">
@@ -761,7 +809,7 @@ ${items.map(item => `- ${item.name} (${item.size}): ${item.quantity} шт. x $${
             <div className="space-y-4 mb-8">
               <div className="flex justify-between text-gray-400">
                 <span>Товарів</span>
-                <span>{items.length}</span>
+                <span>{totalQuantity}</span>
               </div>
               <div className="flex justify-between text-gray-400">
                 <span>Доставка</span>
@@ -900,6 +948,7 @@ const Admin = () => {
   };
 
   const [newProduct, setNewProduct] = useState<Partial<Product>>(initialFormState);
+  const [uploadSessionId, setUploadSessionId] = useState(() => Math.random().toString(36).substring(7));
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -925,9 +974,14 @@ const Admin = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const cancelEdit = () => {
+  const resetForm = () => {
     setEditingId(null);
     setNewProduct(initialFormState);
+    setUploadSessionId(Math.random().toString(36).substring(7));
+  };
+
+  const cancelEdit = () => {
+    resetForm();
   };
 
   const processFiles = async (files: FileList | File[]) => {
@@ -937,18 +991,27 @@ const Admin = () => {
     const uploadedUrls: string[] = [];
 
     try {
+      const folder = editingId || `new_${uploadSessionId}`;
       for (const file of Array.from(files)) {
-        const fileRef = ref(storage, `products/${Date.now()}_${file.name}`);
+        // Use filename directly within a product-specific folder to prevent duplicates
+        // but allow overwriting if the same file is uploaded again for the same product
+        const fileRef = ref(storage, `products/${folder}/${file.name}`);
         const snapshot = await uploadBytes(fileRef, file);
         const url = await getDownloadURL(snapshot.ref);
-        uploadedUrls.push(url);
+        
+        // Only add if not already in the list
+        if (!newProduct.images?.includes(url)) {
+          uploadedUrls.push(url);
+        }
       }
 
-      setNewProduct(prev => ({
-        ...prev,
-        images: [...(prev.images || []), ...uploadedUrls]
-      }));
-      toast.success("Фото завантажено");
+      if (uploadedUrls.length > 0) {
+        setNewProduct(prev => ({
+          ...prev,
+          images: [...(prev.images || []), ...uploadedUrls]
+        }));
+        toast.success("Фото завантажено");
+      }
     } catch (err) {
       console.error("Upload error:", err);
       toast.error("Помилка завантаження");
@@ -997,6 +1060,9 @@ const Admin = () => {
         const images = prev.images || [];
         const oldIndex = images.indexOf(active.id as string);
         const newIndex = images.indexOf(over.id as string);
+        
+        if (oldIndex === -1 || newIndex === -1) return prev;
+        
         return {
           ...prev,
           images: arrayMove(images, oldIndex, newIndex),
@@ -1020,17 +1086,18 @@ const Admin = () => {
 
     try {
       const productData = {
-        name: newProduct.name?.trim() || "",
+        name: (newProduct.name || "").trim(),
         category: newProduct.category || CATEGORIES[0],
         price: Number(newProduct.price) || 0,
         sizes: newProduct.sizes || [],
         images: newProduct.images || [],
-        inStock: !!newProduct.inStock,
-        description: newProduct.description?.trim() || ""
+        inStock: newProduct.inStock !== false, // Default to true
+        description: (newProduct.description || "").trim()
       };
 
       if (editingId) {
-        await updateDoc(doc(db, "products", editingId), {
+        const docRef = doc(db, "products", editingId);
+        await updateDoc(docRef, {
           ...productData,
           id: editingId
         });
@@ -1044,8 +1111,7 @@ const Admin = () => {
         toast.success("Товар додано", { id: toastId });
       }
       
-      setNewProduct(initialFormState);
-      setEditingId(null);
+      resetForm();
     } catch (err) {
       console.error("Error saving product:", err);
       toast.error("Помилка при збереженні", { id: toastId });

@@ -4,8 +4,6 @@ export interface Product {
   category: string;
   price: number;
   inStock: boolean;
-  rostovkaInfo: string;
-  packSize: number;
   sizes: string[];
   images: string[];
   description?: string;
