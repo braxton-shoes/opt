@@ -2,7 +2,7 @@
   "name": "react-example",
   "private": true,
   "version": "0.0.0",
-  "homepage": "https://braxton-shoes.github.io/opt",
+  "homepage": "https://braxton-shoes.github.io/opt/",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
