@@ -1019,6 +1019,23 @@ const Admin = () => {
   const [adminCategory, setAdminCategory] = useState("Всі");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [inlinePriceEditId, setInlinePriceEditId] = useState<string | null>(null);
+  const [inlinePriceValue, setInlinePriceValue] = useState<string>("");
+
+  const updatePrice = async (id: string, newPrice: number) => {
+    if (isNaN(newPrice) || newPrice < 0) {
+      toast.error("Некоректна ціна");
+      return;
+    }
+    try {
+      await updateDoc(doc(db, "products", id), { price: newPrice });
+      toast.success("Ціну оновлено");
+      setInlinePriceEditId(null);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `products/${id}`);
+      toast.error("Помилка оновлення ціни");
+    }
+  };
   
   const initialFormState: Partial<Product> = {
     name: '',
@@ -1450,8 +1467,58 @@ const Admin = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm font-bold">${product.price}</div>
-                      <div className="text-[10px] text-gray-400 font-medium">{formatUAH(product.price)}</div>
+                      {inlinePriceEditId === product.id ? (
+                        <div className="flex flex-col gap-1 animate-in fade-in slide-in-from-left-2">
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] font-bold text-gray-400">$</span>
+                            <input
+                              autoFocus
+                              type="number"
+                              value={inlinePriceValue}
+                              onChange={(e) => setInlinePriceValue(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') updatePrice(product.id, Number(inlinePriceValue));
+                                if (e.key === 'Escape') setInlinePriceEditId(null);
+                              }}
+                              className="w-16 px-1.5 py-1 text-xs font-bold border border-black rounded-lg outline-none shadow-sm"
+                            />
+                            <div className="flex gap-0.5">
+                              <button 
+                                onClick={() => updatePrice(product.id, Number(inlinePriceValue))}
+                                className="p-1 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                title="Зберегти"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button 
+                                onClick={() => setInlinePriceEditId(null)}
+                                className="p-1 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Скасувати"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="text-[9px] text-gray-400 font-medium pl-2">{formatUAH(Number(inlinePriceValue) || 0)}</div>
+                        </div>
+                      ) : (
+                        <div 
+                          className="group cursor-pointer inline-flex flex-col"
+                          onClick={() => {
+                            setInlinePriceEditId(product.id);
+                            setInlinePriceValue(product.price.toString());
+                          }}
+                          title="Натисніть для швидкого редагування"
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <div className="text-sm font-bold text-gray-900 group-hover:text-black transition-colors">${product.price}</div>
+                            <div className="opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-4px] group-hover:translate-x-0">
+                              <Settings className="w-3 h-3 text-gray-400" />
+                            </div>
+                          </div>
+                          <div className="text-[10px] text-gray-400 font-medium group-hover:text-gray-500 transition-colors">{formatUAH(product.price)}</div>
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <span className={cn(
