@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext } from "react";
+import React, { useState, useEffect, createContext, useContext, Component, ErrorInfo } from "react";
 import { HashRouter as Router, Routes, Route, Link, Navigate, useLocation } from "react-router-dom";
 import { ShoppingCart, Package, User, Phone, MapPin, Truck, ChevronLeft, ChevronRight, X, Plus, Minus, CheckCircle2, Settings, Image as ImageIcon, Trash2, LogIn, LogOut, Search, ZoomIn } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -104,19 +104,22 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    console.log("AuthProvider: Initializing auth listener");
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      console.log("AuthProvider: Auth state changed", u?.email);
       try {
         if (u) {
-          // Check if user is admin in Firestore or by email
           const userDoc = await getDoc(doc(db, "users", u.uid));
           const userData = userDoc.data();
           const isDefaultAdmin = u.email === "thecupoftea1000@gmail.com" && u.emailVerified;
           
-          setIsAdmin(userData?.role === "admin" || isDefaultAdmin);
+          const adminStatus = userData?.role === "admin" || isDefaultAdmin;
+          console.log("AuthProvider: Admin status determined", adminStatus);
+          setIsAdmin(adminStatus);
           setUser(u);
 
-          // Ensure user document exists
           if (!userDoc.exists()) {
+            console.log("AuthProvider: Creating user document");
             await setDoc(doc(db, "users", u.uid), {
               uid: u.uid,
               email: u.email,
@@ -126,15 +129,16 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             });
           }
         } else {
+          console.log("AuthProvider: No user logged in");
           setUser(null);
           setIsAdmin(false);
         }
       } catch (error) {
-        console.error("Auth initialization error:", error);
-        // Even on error, we should probably allow the user to see the login button
+        console.error("AuthProvider: Auth initialization error:", error);
         setUser(null);
         setIsAdmin(false);
       } finally {
+        console.log("AuthProvider: Setting loading to false");
         setLoading(false);
       }
     });
@@ -1067,6 +1071,8 @@ const Admin = () => {
     const q = query(collection(db, "products"), orderBy("name"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setProducts(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as Product));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, "products");
     });
     return unsubscribe;
   }, [isAdmin]);
@@ -1076,6 +1082,8 @@ const Admin = () => {
     const q = query(collection(db, "users"), orderBy("email"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setUsers(snapshot.docs.map(doc => ({ ...doc.data() }) as UserProfile));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, "users");
     });
     return unsubscribe;
   }, [isAdmin, activeTab]);
@@ -1104,8 +1112,12 @@ const Admin = () => {
     return matchesSearch && matchesCategory;
   });
 
+  console.log("Admin: Rendering", { authLoading, isAdmin });
   if (authLoading) return <div className="p-12 text-center">Завантаження...</div>;
-  if (!isAdmin) return <Navigate to="/" />;
+  if (!isAdmin) {
+    console.log("Admin: Not an admin, redirecting to home");
+    return <Navigate to="/" />;
+  }
 
   const startEdit = (product: Product) => {
     setEditingId(product.id);
@@ -1719,8 +1731,13 @@ const Admin = () => {
 
 export default function App() {
   const [cart, setCart] = useState<CartItem[]>(() => {
-    const saved = localStorage.getItem("cart");
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem("cart");
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error("Cart initialization error:", error);
+      return [];
+    }
   });
 
   useEffect(() => {
