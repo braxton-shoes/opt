@@ -607,6 +607,8 @@ const Cart = ({ items, onRemove, onClear, onUpdateQuantity }: { items: CartItem[
   const [formData, setFormData] = useState({ name: '', phone: '', city: '', delivery: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [confirmClear, setConfirmClear] = useState(false);
+
   const total = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const totalQuantity = items.reduce((acc, item) => acc + item.quantity, 0);
 
@@ -793,17 +795,36 @@ ${items.map(item => `- ${item.name} (${item.type === 'pack' ? 'Ростовка'
               })}
 
               <div className="flex justify-end">
-                <button 
-                  onClick={() => {
-                    if (window.confirm("Ви впевнені, що хочете очистити кошик?")) {
-                      onClear();
-                    }
-                  }}
-                  className="flex items-center gap-2 text-gray-400 hover:text-red-500 text-sm font-medium transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Очистити кошик
-                </button>
+                {confirmClear ? (
+                  <div className="flex items-center gap-3 bg-red-50 px-4 py-2 rounded-2xl border border-red-100 animate-in fade-in slide-in-from-right-4">
+                    <span className="text-xs font-bold text-red-600">Очистити кошик?</span>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => {
+                          onClear();
+                          setConfirmClear(false);
+                        }}
+                        className="bg-red-500 text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase hover:bg-red-600 transition-colors"
+                      >
+                        Так
+                      </button>
+                      <button 
+                        onClick={() => setConfirmClear(false)}
+                        className="bg-white text-gray-400 px-3 py-1 rounded-lg text-[10px] font-black uppercase border border-gray-200 hover:text-black transition-colors"
+                      >
+                        Ні
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={() => setConfirmClear(true)}
+                    className="flex items-center gap-2 text-gray-400 hover:text-red-500 text-sm font-medium transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Очистити кошик
+                  </button>
+                )}
               </div>
             </div>
           ) : (
@@ -997,6 +1018,7 @@ const Admin = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [adminCategory, setAdminCategory] = useState("Всі");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   
   const initialFormState: Partial<Product> = {
     name: '',
@@ -1195,10 +1217,10 @@ const Admin = () => {
   const clearSizes = () => setNewProduct({ ...newProduct, sizes: [] });
 
   const deleteProduct = async (id: string) => {
-    if (!confirm("Ви впевнені, що хочете видалити цей товар?")) return;
     try {
       await deleteDoc(doc(db, "products", id));
       toast.success("Товар видалено");
+      setConfirmDeleteId(null);
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `products/${id}`);
       toast.error("Помилка при видаленні");
@@ -1441,20 +1463,39 @@ const Admin = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => startEdit(product)}
-                          className="p-2 hover:bg-gray-100 text-gray-400 hover:text-black rounded-full transition-colors"
-                          title="Редагувати"
-                        >
-                          <Settings className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => deleteProduct(product.id)}
-                          className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-colors"
-                          title="Видалити"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {confirmDeleteId === product.id ? (
+                          <div className="flex items-center gap-1 bg-red-50 p-1 rounded-xl border border-red-100 animate-in fade-in zoom-in-95">
+                            <button 
+                              onClick={() => deleteProduct(product.id)}
+                              className="px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg hover:bg-red-600 transition-colors"
+                            >
+                              Видалити
+                            </button>
+                            <button 
+                              onClick={() => setConfirmDeleteId(null)}
+                              className="px-2 py-1 text-gray-400 text-[10px] font-bold hover:text-black transition-colors"
+                            >
+                              Скасувати
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <button 
+                              onClick={() => startEdit(product)}
+                              className="p-2 hover:bg-gray-100 text-gray-400 hover:text-black rounded-full transition-colors"
+                              title="Редагувати"
+                            >
+                              <Settings className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => setConfirmDeleteId(product.id)}
+                              className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-colors"
+                              title="Видалити"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
