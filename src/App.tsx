@@ -1036,6 +1036,16 @@ const Admin = () => {
       toast.error("Помилка оновлення ціни");
     }
   };
+
+  const toggleStock = async (id: string, currentStatus: boolean) => {
+    try {
+      await updateDoc(doc(db, "products", id), { inStock: !currentStatus });
+      toast.success(`Статус змінено: ${!currentStatus ? 'В наявності' : 'Немає'}`);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `products/${id}`);
+      toast.error("Помилка зміни статусу");
+    }
+  };
   
   const initialFormState: Partial<Product> = {
     name: '',
@@ -1521,12 +1531,18 @@ const Admin = () => {
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={cn(
-                        "px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                        product.inStock ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                      )}>
+                      <button
+                        onClick={() => toggleStock(product.id, product.inStock)}
+                        className={cn(
+                          "px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all hover:scale-105 active:scale-95",
+                          product.inStock 
+                            ? "bg-green-100 text-green-700 hover:bg-green-200" 
+                            : "bg-red-100 text-red-700 hover:bg-red-200"
+                        )}
+                        title="Натисніть для зміни статусу"
+                      >
                         {product.inStock ? "В наявності" : "Немає"}
-                      </span>
+                      </button>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
