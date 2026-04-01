@@ -1,0 +1,127 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: products
+    // Document ID: productId
+    // Fields:
+    //   - id: string (required)
+    //   - name: string (required)
+    //   - category: string (required)
+    //   - price: number (required, positive)
+    //   - inStock: bool (required)
+    //   - rostovkaInfo: string (required)
+    //   - packSize: number (required, positive)
+    //   - sizes: list (required, strings)
+    //   - images: list (required, strings)
+    //   - description: string (optional)
+    //
+    // Collection: orders
+    // Document ID: orderId
+    // Fields:
+    //   - customer: map (required)
+    //     - name: string (required)
+    //     - phone: string (required)
+    //     - city: string (required)
+    //     - delivery: string (required)
+    //   - items: list (required)
+    //   - total: number (required, positive)
+    //   - createdAt: timestamp (required)
+    //   - status: string (required, enum: pending, confirmed, shipped, completed, cancelled)
+    //
+    // Collection: users
+    // Document ID: userId (matches auth.uid)
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required)
+    //   - displayName: string (optional)
+    //   - photoURL: string (optional)
+    //   - role: string (required, enum: admin, client)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        ((exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
+          (request.auth.token.email == "thecupoftea1000@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidProduct(data) {
+      return hasRequiredFields(['id', 'name', 'category', 'price', 'inStock', 'sizes', 'images']) &&
+             data.id is string && data.name is string && data.category is string &&
+             data.price is number && data.price > 0 &&
+             data.inStock is bool &&
+             data.sizes is list && data.images is list;
+    }
+
+    function isValidOrder(data) {
+      return hasRequiredFields(['customer', 'items', 'total', 'createdAt', 'status']) &&
+             data.customer is map && data.items is list &&
+             data.total is number && data.total > 0 &&
+             data.createdAt is timestamp &&
+             data.status in ['pending', 'confirmed', 'shipped', 'completed', 'cancelled'];
+    }
+
+    function isValidUser(data) {
+      return hasRequiredFields(['uid', 'email', 'role']) &&
+             data.uid is string && data.uid == request.auth.uid &&
+             data.email is string && isValidEmail(data.email) &&
+             data.role in ['admin', 'client'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /products/{productId} {
+      allow read: if true; // Publicly readable catalog
+      allow write: if isAdmin() && isValidProduct(request.resource.data);
+    }
+
+    match /orders/{orderId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.customer.uid == request.auth.uid);
+      allow create: if isAuthenticated() && isValidOrder(request.resource.data);
+      allow update: if isAdmin() && isValidOrder(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && 
+                    (request.resource.data.role == 'client' || (request.resource.data.role == 'admin' && request.auth.token.email == "thecupoftea1000@gmail.com" && request.auth.token.email_verified == true));
+      allow update: if (isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == resource.data.role) || isAdmin();
+    }
+  }
+}

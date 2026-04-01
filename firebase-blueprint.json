@@ -1,0 +1,85 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "A shoe product in the catalog",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "price": { "type": "number" },
+        "inStock": { "type": "boolean" },
+        "rostovkaInfo": { "type": "string" },
+        "packSize": { "type": "number" },
+        "sizes": { "type": "array", "items": { "type": "string" } },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "description": { "type": "string" }
+      },
+      "required": ["id", "name", "category", "price", "inStock", "rostovkaInfo", "packSize", "sizes", "images"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "A customer order",
+      "type": "object",
+      "properties": {
+        "customer": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "phone": { "type": "string" },
+            "city": { "type": "string" },
+            "delivery": { "type": "string" }
+          },
+          "required": ["name", "phone", "city", "delivery"]
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "productId": { "type": "string" },
+              "name": { "type": "string" },
+              "image": { "type": "string" },
+              "type": { "type": "string", "enum": ["pack", "individual"] },
+              "quantity": { "type": "number" },
+              "price": { "type": "number" },
+              "size": { "type": "string" }
+            }
+          }
+        },
+        "total": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "shipped", "completed", "cancelled"] }
+      },
+      "required": ["customer", "items", "total", "createdAt", "status"]
+    },
+    "User": {
+      "title": "User",
+      "description": "App user profile",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "client"] }
+      },
+      "required": ["uid", "email", "role"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Shoe catalog"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Customer orders"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    }
+  }
+}
