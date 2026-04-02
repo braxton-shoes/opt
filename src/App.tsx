@@ -377,8 +377,8 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
           <X className="w-6 h-6" />
         </button>
         
-        <div className="grid md:grid-cols-2 max-h-[90vh] overflow-y-auto">
-          <div className="bg-gray-50 flex flex-col relative group/gallery border-b md:border-b-0 md:border-r border-gray-100">
+        <div className="grid md:grid-cols-2 max-h-[90vh] overflow-y-auto overflow-x-hidden">
+          <div className="bg-gray-50 flex flex-col relative group/gallery border-b md:border-b-0 md:border-r border-gray-100 w-full overflow-hidden">
             <div 
               className="aspect-[3/4] overflow-hidden flex items-center justify-center p-4 relative cursor-zoom-in"
               onClick={() => setIsZoomed(true)}
@@ -413,7 +413,7 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
                     key={idx} 
                     onClick={() => setActiveImage(idx)}
                     className={cn(
-                      "w-16 h-16 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 flex items-center justify-center bg-white",
+                      "w-12 h-12 md:w-16 md:h-16 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 flex items-center justify-center bg-white",
                       activeImage === idx ? "border-black" : "border-transparent"
                     )}
                   >
@@ -423,15 +423,15 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
               </div>
             )}
           </div>
-          <div className="p-4 md:p-8 flex flex-col">
+          <div className="p-4 md:p-8 flex flex-col min-w-0">
             <div className="mb-6">
-              <h2 className="text-xl md:text-2xl font-bold text-gray-900">{product.name}</h2>
-              <div className="flex items-baseline gap-2 mt-1">
-                <p className="text-black font-bold text-lg md:text-xl">${product.price} <span className="text-sm text-gray-400 font-normal">/ пара</span></p>
-                <p className="text-gray-400 text-xs md:text-sm font-medium">({formatUAH(product.price)})</p>
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900 break-words">{product.name}</h2>
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-1">
+                <p className="text-black font-bold text-lg md:text-xl">${product.price} <span className="text-xs text-gray-400 font-normal">/ пара</span></p>
+                <p className="text-gray-400 text-[10px] md:text-sm font-medium">({formatUAH(product.price)})</p>
               </div>
               {product.description && (
-                <p className="text-xs md:text-sm text-gray-500 mt-4 leading-relaxed">{product.description}</p>
+                <p className="text-xs md:text-sm text-gray-500 mt-4 leading-relaxed break-words">{product.description}</p>
               )}
             </div>
 
