@@ -51,7 +51,7 @@ async function startServer() {
 📍 ${order.customer.city}, ${order.customer.delivery}
 
 🛒 *Товари:*
-${order.items.map((item: any) => `- ${item.name} (${item.type === 'pack' ? 'Ростовка' : `Розм. ${item.size}`}): ${item.quantity} ${item.type === 'pack' ? 'ящ' : 'пар'}`).join('\n')}
+${order.items.map((item: any) => `- ${item.name} (${item.type === 'pack' ? 'Ростовка' : `${item.size}`}): ${item.quantity} ${item.type === 'pack' ? 'ящ' : 'пар'}`).join('\n')}
 
 💰 *Разом до оплати:* $${order.total}
         `;

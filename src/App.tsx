@@ -251,6 +251,7 @@ const ProductCard: React.FC<{ product: Product; onOpen: (p: Product) => void }> 
         )}
       </div>
       <div className="mt-4 space-y-1.5">
+        <p className="text-[10px] md:text-xs text-gray-400 uppercase tracking-widest font-bold">{product.category}</p>
         <div className="flex justify-between items-start">
           <h3 className="text-sm md:text-base font-bold text-gray-900 leading-tight">{product.name}</h3>
           <div className="text-right">
@@ -258,7 +259,6 @@ const ProductCard: React.FC<{ product: Product; onOpen: (p: Product) => void }> 
             <div className="text-[10px] md:text-xs text-gray-400 font-medium mt-0.5">{formatUAH(product.price)}</div>
           </div>
         </div>
-        <p className="text-[10px] md:text-xs text-gray-500 uppercase tracking-wider font-medium">{product.category}</p>
       </div>
     </motion.div>
   );
@@ -540,6 +540,7 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
           </div>
           <div className="p-4 md:p-8 flex flex-col min-w-0">
             <div className="mb-6 md:mb-8">
+              <span className="inline-block px-2 py-1 bg-gray-100 text-gray-500 text-[10px] font-bold uppercase tracking-widest rounded-md mb-2">{product.category}</span>
               <h2 className="text-xl md:text-2xl font-bold text-gray-900 break-words leading-tight">{product.name}</h2>
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mt-1.5">
                 <p className="text-black font-bold text-lg md:text-2xl">${product.price} <span className="text-xs text-gray-400 font-normal">/ пара</span></p>
@@ -577,7 +578,7 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
                       <div key={size} className="flex items-center justify-between p-3 md:p-4 bg-gray-50 rounded-2xl border border-gray-100 group hover:border-gray-200 transition-all gap-3">
                         <div className="flex flex-col min-w-0 flex-1">
                           <div className="flex items-center flex-wrap gap-2">
-                            <span className="text-sm md:text-base font-bold text-gray-900 whitespace-nowrap">Розм. {size}</span>
+                            <span className="text-sm md:text-base font-bold text-gray-900 whitespace-nowrap">{size}</span>
                             {inCart > 0 && (
                               <span className="text-[8px] md:text-[10px] bg-black text-white px-1.5 py-0.5 rounded-full font-bold uppercase tracking-tighter whitespace-nowrap">
                                 {inCart} {current > 0 && <span className="text-gray-400">+{current}</span>}
@@ -832,7 +833,7 @@ const Cart = ({ items, onRemove, onClear, onUpdateQuantity }: { items: CartItem[
       
       const productSections = Object.entries(groupedByProduct).map(([name, productItems]) => {
         const itemsList = productItems.map(item => 
-          `  • ${item.type === 'pack' ? 'Ростовка' : `Розм. ${item.size}`}: ${item.quantity} ${item.type === 'pack' ? 'ящ' : 'пар'} x $${item.price}`
+          `  • ${item.type === 'pack' ? 'Ростовка' : `${item.size}`}: ${item.quantity} ${item.type === 'pack' ? 'ящ' : 'пар'} x $${item.price}`
         ).join('\n');
         return `👟 *${name}*\n${itemsList}\n────────────────`;
       });
