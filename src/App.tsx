@@ -287,7 +287,15 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    
+    // Lock body scroll
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = 'hidden';
+    
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = originalStyle;
+    };
   }, [product.images.length, onClose]);
 
   const getInCartCount = (size: string) => {
@@ -411,7 +419,7 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden relative shadow-2xl"
+        className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden relative shadow-2xl overscroll-contain"
       >
         <button onClick={onClose} className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full z-10">
           <X className="w-6 h-6" />
@@ -1694,14 +1702,14 @@ const Admin = () => {
                 <tbody className="divide-y divide-gray-100">
                   {filteredProducts.map(product => (
                     <tr key={product.id} className={cn("hover:bg-gray-50/50 transition-colors", editingId === product.id && "bg-gray-50")}>
-                      <td className="px-4 py-2">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-gray-50 border border-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
-                            <img src={product.images[0]} className="max-w-full max-h-full object-contain p-0.5" referrerPolicy="no-referrer" />
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-4">
+                          <div className="w-16 h-16 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0 shadow-sm">
+                            <img src={product.images[0]} className="max-w-full max-h-full object-contain p-1" referrerPolicy="no-referrer" />
                           </div>
                           <div className="min-w-0">
-                            <p className="font-bold text-xs truncate">{product.name}</p>
-                            <p className="text-[10px] text-gray-400">{product.category}</p>
+                            <p className="font-bold text-sm text-gray-900 truncate">{product.name}</p>
+                            <p className="text-[10px] md:text-xs text-gray-400 font-medium uppercase tracking-wider">{product.category}</p>
                           </div>
                         </div>
                       </td>
@@ -1819,22 +1827,22 @@ const Admin = () => {
             {/* Mobile Card View */}
             <div className="md:hidden divide-y divide-gray-100">
               {filteredProducts.map(product => (
-                <div key={product.id} className={cn("p-4 space-y-3", editingId === product.id && "bg-gray-50")}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-gray-50 border border-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
-                      <img src={product.images[0]} className="max-w-full max-h-full object-contain p-0.5" referrerPolicy="no-referrer" />
+                <div key={product.id} className={cn("p-5 space-y-4", editingId === product.id && "bg-gray-50")}>
+                  <div className="flex items-center gap-4">
+                    <div className="w-20 h-20 rounded-2xl bg-gray-50 border border-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0 shadow-sm">
+                      <img src={product.images[0]} className="max-w-full max-h-full object-contain p-1" referrerPolicy="no-referrer" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm truncate">{product.name}</p>
-                      <p className="text-[10px] text-gray-400">{product.category}</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-bold text-gray-900">${product.price}</div>
-                      <div className="text-[10px] text-gray-400">{formatUAH(product.price)}</div>
+                      <p className="font-bold text-base text-gray-900 leading-tight mb-1">{product.name}</p>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{product.category}</p>
+                      <div className="mt-2">
+                        <div className="text-base font-black text-black">${product.price}</div>
+                        <div className="text-[10px] text-gray-400 font-medium">{formatUAH(product.price)}</div>
+                      </div>
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center justify-between gap-3 pt-2">
                     <button
                       onClick={() => toggleStock(product.id, product.inStock)}
                       className={cn(
