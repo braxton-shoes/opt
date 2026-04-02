@@ -379,9 +379,10 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
+              onTap={(e) => e.stopPropagation()}
               src={product.images[activeImage]} 
               alt={product.name} 
-              className="max-w-full max-h-full object-contain pointer-events-none"
+              className="max-w-full max-h-full object-contain relative z-10"
               referrerPolicy="no-referrer"
             />
             
@@ -446,7 +447,7 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
                   transition={{ duration: 0.2 }}
                   src={product.images[activeImage]} 
                   alt={product.name} 
-                  className="max-w-full max-h-full object-contain pointer-events-none" 
+                  className="max-w-full max-h-full object-contain" 
                   referrerPolicy="no-referrer" 
                 />
               </AnimatePresence>
