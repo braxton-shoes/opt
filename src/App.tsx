@@ -1,6 +1,6 @@
 import React, { useState, useEffect, createContext, useContext, Component, ErrorInfo, useRef } from "react";
 import { HashRouter as Router, Routes, Route, Link, Navigate, useLocation } from "react-router-dom";
-import { ShoppingCart, Package, User, Phone, MapPin, Truck, ChevronLeft, ChevronRight, X, Plus, Minus, CheckCircle2, Settings, Image as ImageIcon, Trash2, LogIn, LogOut, Search, ZoomIn } from "lucide-react";
+import { ShoppingCart, Package, User, Phone, MapPin, Truck, ChevronLeft, ChevronRight, ChevronDown, X, Plus, Minus, CheckCircle2, Settings, Image as ImageIcon, Trash2, LogIn, LogOut, Search, ZoomIn } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Toaster, toast } from "sonner";
 import { cn } from "@/src/lib/utils";
@@ -521,13 +521,13 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
                   <div className="flex flex-wrap gap-2 md:gap-3">
                     <button 
                       onClick={handleAddAllSizes}
-                      className="bg-black/5 hover:bg-black/10 px-3 py-1.5 rounded-lg text-[10px] md:text-xs text-black uppercase font-bold tracking-wider transition-all"
+                      className="bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-lg text-[10px] md:text-xs text-white uppercase font-bold tracking-wider transition-all shadow-sm hover:shadow-md active:scale-95"
                     >
                       Додати всі
                     </button>
                     <button 
                       onClick={() => setIndividualQuantities(product.sizes.reduce((acc, size) => ({ ...acc, [size]: 0 }), {}))}
-                      className="px-3 py-1.5 rounded-lg text-[10px] md:text-xs text-gray-400 hover:text-black uppercase font-bold tracking-wider transition-all"
+                      className="bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg text-[10px] md:text-xs text-red-600 uppercase font-bold tracking-wider transition-all active:scale-95"
                     >
                       Очистити
                     </button>
@@ -591,7 +591,7 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
                 disabled={Object.values(individualQuantities).every(q => q === 0)}
                 className="w-full bg-black hover:bg-gray-800 text-white py-4 md:py-5 rounded-2xl font-bold transition-all shadow-lg shadow-gray-200 disabled:opacity-50 disabled:shadow-none text-sm md:text-lg"
               >
-                Додати — ${totalIndividualPrice}
+                Додати до кошика — ${totalIndividualPrice}
               </button>
               <button 
                 onClick={onClose}
@@ -743,6 +743,11 @@ const Cart = ({ items, onRemove, onClear, onUpdateQuantity }: { items: CartItem[
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [confirmClear, setConfirmClear] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+
+  const toggleGroup = (productId: string) => {
+    setExpandedGroups(prev => ({ ...prev, [productId]: !prev[productId] }));
+  };
 
   const total = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const totalQuantity = items.reduce((acc, item) => acc + item.quantity, 0);
@@ -878,8 +883,8 @@ const Cart = ({ items, onRemove, onClear, onUpdateQuantity }: { items: CartItem[
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12">
-      <div className="grid lg:grid-cols-3 gap-12">
+    <div className="max-w-7xl mx-auto px-2 sm:px-4 py-6 md:py-12">
+      <div className="grid lg:grid-cols-3 gap-6 lg:gap-12">
         <div className="lg:col-span-2 space-y-8">
           <header>
             <h1 className="text-3xl font-bold text-gray-900">{step === 'cart' ? 'Ваш кошик' : 'Оформлення замовлення'}</h1>
@@ -889,67 +894,112 @@ const Cart = ({ items, onRemove, onClear, onUpdateQuantity }: { items: CartItem[
             <div className="space-y-6">
               {Object.entries(groupedItems).map(([productId, group]) => {
                 const groupTotal = group.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+                const totalPairs = group.items.reduce((sum, i) => sum + i.quantity, 0);
+                const isExpanded = expandedGroups[productId];
+                const summary = group.items.map(item => `${item.size}(${item.quantity})`).join(', ');
+
                 return (
                   <div key={productId} className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm">
-                    <div className="flex items-center justify-between p-4 bg-gray-50/50 border-b border-gray-100">
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-gray-200 rounded-xl overflow-hidden flex-shrink-0 border border-gray-100">
+                    <div 
+                      onClick={() => toggleGroup(productId)}
+                      className="flex items-center justify-between p-3 md:p-4 bg-gray-50/50 border-b border-gray-100 cursor-pointer hover:bg-gray-100/50 transition-colors gap-2"
+                    >
+                      <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                        <div className="w-12 h-12 md:w-14 md:h-14 bg-gray-200 rounded-xl overflow-hidden flex-shrink-0 border border-gray-100">
                           <img src={group.image} alt={group.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                         </div>
-                        <div>
-                          <h3 className="text-base font-bold text-gray-900 leading-tight">{group.name}</h3>
-                          <p className="text-[10px] text-gray-400 mt-0.5">
-                            Ціна: <span className="font-bold text-gray-600">${group.items[0].price}</span> 
-                            <span className="mx-1">/</span> 
-                            {formatUAH(group.items[0].price)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-base font-black text-gray-900">${groupTotal}</div>
-                        <div className="text-[10px] text-gray-400 font-medium">{formatUAH(groupTotal)}</div>
-                      </div>
-                    </div>
-                    <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2 bg-white">
-                      {group.items.map(item => (
-                        <div key={item.id} className="flex items-center justify-between bg-gray-50/50 p-2.5 rounded-2xl border border-gray-100/50 hover:border-gray-200 transition-colors">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center shadow-sm">
-                              <span className="text-xs font-black text-gray-900">{item.size}</span>
-                            </div>
-                            {item.type === 'pack' && (
-                              <span className="text-[8px] bg-black text-white px-1.5 py-0.5 rounded-md font-bold uppercase tracking-tighter">
-                                Пак
-                              </span>
+                        <div className="min-w-0">
+                          <h3 className="text-sm md:text-base font-bold text-gray-900 leading-tight truncate">{group.name}</h3>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[9px] md:text-[10px] bg-black text-white px-1.5 py-0.5 rounded-md font-bold whitespace-nowrap">
+                              {totalPairs} {totalPairs === 1 ? 'пара' : totalPairs < 5 ? 'пари' : 'пар'}
+                            </span>
+                            {!isExpanded && (
+                              <p className="text-[10px] md:text-xs text-gray-500 font-medium truncate">
+                                {summary}
+                              </p>
                             )}
                           </div>
-                          
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center border border-gray-200 rounded-xl bg-white h-8 overflow-hidden shadow-sm">
-                              <button 
-                                onClick={() => onUpdateQuantity(item.id, -1)}
-                                className="px-2 h-full hover:bg-gray-50 transition-colors text-gray-400 hover:text-black"
-                              >
-                                <Minus className="w-2.5 h-2.5" />
-                              </button>
-                              <span className="w-6 text-center font-bold text-[11px] text-gray-900">{item.quantity}</span>
-                              <button 
-                                onClick={() => onUpdateQuantity(item.id, 1)}
-                                className="px-2 h-full hover:bg-gray-50 transition-colors text-gray-400 hover:text-black"
-                              >
-                                <Plus className="w-2.5 h-2.5" />
-                              </button>
-                            </div>
-                            <button 
-                              onClick={() => onRemove(item.id)}
-                              className="p-1.5 text-gray-300 hover:text-red-500 transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
                         </div>
-                      ))}
+                      </div>
+                      <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
+                        <div className="text-right">
+                          <div className="text-sm md:text-base font-black text-gray-900">${groupTotal}</div>
+                          <div className="text-[9px] md:text-[10px] text-gray-400 font-medium">{formatUAH(groupTotal)}</div>
+                        </div>
+                        <motion.div
+                          animate={{ rotate: isExpanded ? 180 : 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <ChevronDown className="w-4 h-4 md:w-5 md:h-5 text-gray-400" />
+                        </motion.div>
+                      </div>
                     </div>
+                    
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div 
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="p-3 grid grid-cols-1 gap-2 bg-white border-t border-gray-50">
+                            {group.items.map(item => (
+                              <div key={item.id} className="flex items-center justify-between bg-gray-50/50 p-2.5 rounded-2xl border border-gray-100/50 hover:border-gray-200 transition-colors">
+                                <div className="flex items-center gap-4 md:gap-8">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center shadow-sm">
+                                      <span className="text-xs font-black text-gray-900">{item.size}</span>
+                                    </div>
+                                    {item.type === 'pack' && (
+                                      <span className="text-[8px] bg-black text-white px-1.5 py-0.5 rounded-md font-bold uppercase tracking-tighter">
+                                        Пак
+                                      </span>
+                                    )}
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex items-center border border-gray-200 rounded-xl bg-white h-8 overflow-hidden shadow-sm">
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          onUpdateQuantity(item.id, -1);
+                                        }}
+                                        className="px-2 h-full hover:bg-gray-50 transition-colors text-gray-400 hover:text-black"
+                                      >
+                                        <Minus className="w-2.5 h-2.5" />
+                                      </button>
+                                      <span className="w-6 text-center font-bold text-[11px] text-gray-900">{item.quantity}</span>
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          onUpdateQuantity(item.id, 1);
+                                        }}
+                                        className="px-2 h-full hover:bg-gray-50 transition-colors text-gray-400 hover:text-black"
+                                      >
+                                        <Plus className="w-2.5 h-2.5" />
+                                      </button>
+                                    </div>
+
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onRemove(item.id);
+                                      }}
+                                      className="p-1.5 text-gray-300 hover:text-red-500 transition-colors"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 );
               })}
@@ -1576,7 +1626,7 @@ const Admin = () => {
                   <div className="flex gap-2">
                     <button type="button" onClick={selectAllSizes} className="text-[9px] text-gray-400 hover:text-black font-bold uppercase">Вибрати все</button>
                     <button type="button" onClick={select40_45} className="text-[9px] text-gray-400 hover:text-black font-bold uppercase">40-45</button>
-                    <button type="button" onClick={clearSizes} className="text-[9px] text-gray-400 hover:text-black font-bold uppercase">Очистити</button>
+                    <button type="button" onClick={clearSizes} className="text-[9px] text-red-400 hover:text-red-600 font-bold uppercase transition-colors">Очистити</button>
                   </div>
                 </div>
                 <div className="grid grid-cols-4 gap-1.5">
