@@ -377,8 +377,8 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
           <X className="w-6 h-6" />
         </button>
         
-        <div className="grid md:grid-cols-2">
-          <div className="bg-gray-50 flex flex-col relative group/gallery">
+        <div className="grid md:grid-cols-2 max-h-[90vh] overflow-y-auto">
+          <div className="bg-gray-50 flex flex-col relative group/gallery border-b md:border-b-0 md:border-r border-gray-100">
             <div 
               className="aspect-[3/4] overflow-hidden flex items-center justify-center p-4 relative cursor-zoom-in"
               onClick={() => setIsZoomed(true)}
@@ -407,7 +407,7 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
               )}
             </div>
             {product.images.length > 1 && (
-              <div className="p-4 flex gap-2 overflow-x-auto">
+              <div className="p-4 flex gap-2 overflow-x-auto scrollbar-hide">
                 {product.images.map((img, idx) => (
                   <button 
                     key={idx} 
@@ -423,32 +423,32 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
               </div>
             )}
           </div>
-          <div className="p-8 flex flex-col max-h-[90vh] overflow-y-auto">
+          <div className="p-4 md:p-8 flex flex-col">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">{product.name}</h2>
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900">{product.name}</h2>
               <div className="flex items-baseline gap-2 mt-1">
-                <p className="text-black font-bold text-xl">${product.price} <span className="text-sm text-gray-400 font-normal">/ пара</span></p>
-                <p className="text-gray-400 text-sm font-medium">({formatUAH(product.price)})</p>
+                <p className="text-black font-bold text-lg md:text-xl">${product.price} <span className="text-sm text-gray-400 font-normal">/ пара</span></p>
+                <p className="text-gray-400 text-xs md:text-sm font-medium">({formatUAH(product.price)})</p>
               </div>
               {product.description && (
-                <p className="text-sm text-gray-500 mt-4 leading-relaxed">{product.description}</p>
+                <p className="text-xs md:text-sm text-gray-500 mt-4 leading-relaxed">{product.description}</p>
               )}
             </div>
 
             <div className="flex-1 space-y-6">
               <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold uppercase text-gray-400 tracking-widest">Виберіть розміри</label>
-                  <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                  <label className="text-[10px] md:text-xs font-bold uppercase text-gray-400 tracking-widest">Виберіть розміри</label>
+                  <div className="flex flex-wrap gap-2 md:gap-3">
                     <button 
                       onClick={handleAddAllSizes}
-                      className="text-[10px] text-black hover:underline uppercase font-bold tracking-wider transition-colors"
+                      className="text-[9px] md:text-[10px] text-black hover:underline uppercase font-bold tracking-wider transition-colors"
                     >
-                      Додати всі розміри по 1
+                      Додати всі
                     </button>
                     <button 
                       onClick={() => setIndividualQuantities(product.sizes.reduce((acc, size) => ({ ...acc, [size]: 0 }), {}))}
-                      className="text-[10px] text-gray-400 hover:text-black uppercase font-bold tracking-wider transition-colors"
+                      className="text-[9px] md:text-[10px] text-gray-400 hover:text-black uppercase font-bold tracking-wider transition-colors"
                     >
                       Очистити
                     </button>
@@ -459,37 +459,36 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
                     const inCart = getInCartCount(size);
                     const current = individualQuantities[size];
                     return (
-                      <div key={size} className="flex items-center justify-between p-3 bg-gray-50 rounded-2xl border border-gray-100 group hover:border-gray-200 transition-all">
-                        <div className="flex flex-col">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-gray-900">Розмір {size}</span>
+                      <div key={size} className="flex items-center justify-between p-2.5 md:p-3 bg-gray-50 rounded-2xl border border-gray-100 group hover:border-gray-200 transition-all gap-2">
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <div className="flex items-center flex-wrap gap-1.5">
+                            <span className="text-xs md:text-sm font-bold text-gray-900 whitespace-nowrap">Розм. {size}</span>
                             {inCart > 0 && (
-                              <span className="text-[9px] bg-black text-white px-1.5 py-0.5 rounded-full font-bold uppercase tracking-tighter">
-                                В кошику: {inCart}
-                                {current > 0 && <span className="ml-1 text-gray-400">+{current}</span>}
+                              <span className="text-[8px] bg-black text-white px-1.5 py-0.5 rounded-full font-bold uppercase tracking-tighter whitespace-nowrap">
+                                {inCart} {current > 0 && <span className="text-gray-400">+{current}</span>}
                               </span>
                             )}
                           </div>
                           {current > 0 && (
-                            <span className="text-[10px] text-black font-medium">Додаємо: {current} пар</span>
+                            <span className="text-[9px] text-black font-medium truncate">+{current} пар</span>
                           )}
                         </div>
-                        <div className="flex items-center border border-gray-200 rounded-xl bg-white shadow-sm">
+                        <div className="flex items-center border border-gray-200 rounded-xl bg-white shadow-sm flex-shrink-0">
                           <button 
                             onClick={() => updateIndividualQty(size, -1)}
-                            className="p-2 hover:bg-gray-50 rounded-l-xl transition-colors"
+                            className="p-1.5 md:p-2 hover:bg-gray-50 rounded-l-xl transition-colors"
                             disabled={current === 0}
                           >
-                            <Minus className={cn("w-3.5 h-3.5", current === 0 ? "text-gray-200" : "text-gray-600")} />
+                            <Minus className={cn("w-3 h-3 md:w-3.5 md:h-3.5", current === 0 ? "text-gray-200" : "text-gray-600")} />
                           </button>
-                          <span className={cn("w-8 text-center font-bold text-sm", current > 0 ? "text-black" : "text-gray-400")}>
+                          <span className={cn("w-6 md:w-8 text-center font-bold text-xs md:text-sm", current > 0 ? "text-black" : "text-gray-400")}>
                             {current}
                           </span>
                           <button 
                             onClick={() => updateIndividualQty(size, 1)}
-                            className="p-2 hover:bg-gray-50 rounded-r-xl transition-colors"
+                            className="p-1.5 md:p-2 hover:bg-gray-50 rounded-r-xl transition-colors"
                           >
-                            <Plus className="w-3.5 h-3.5 text-gray-600" />
+                            <Plus className="w-3 h-3 md:w-3.5 md:h-3.5 text-gray-600" />
                           </button>
                         </div>
                       </div>
@@ -528,6 +527,7 @@ const Catalog = ({ onAddToCart, cartItems }: { onAddToCart: (item: CartItem) => 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string>("Всі");
+  const [sortBy, setSortBy] = useState<"name" | "price-asc" | "price-desc">("name");
 
   useEffect(() => {
     const q = query(collection(db, "products"), orderBy("name"));
@@ -545,9 +545,15 @@ const Catalog = ({ onAddToCart, cartItems }: { onAddToCart: (item: CartItem) => 
     return unsubscribe;
   }, []);
 
-  const filteredProducts = activeCategory === "Всі" 
+  const filteredProducts = (activeCategory === "Всі" 
     ? products 
-    : products.filter(p => p.category === activeCategory);
+    : products.filter(p => p.category === activeCategory))
+    .sort((a, b) => {
+      if (sortBy === "name") return a.name.localeCompare(b.name);
+      if (sortBy === "price-asc") return a.price - b.price;
+      if (sortBy === "price-desc") return b.price - a.price;
+      return 0;
+    });
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
@@ -556,18 +562,35 @@ const Catalog = ({ onAddToCart, cartItems }: { onAddToCart: (item: CartItem) => 
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12">
-      <header className="mb-12">
-        <h1 className="text-4xl font-bold tracking-tight text-gray-900">Каталог взуття</h1>
-        <p className="text-gray-500 mt-2">Оптові ціни та швидка доставка по всій Україні</p>
+    <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">
+      <header className="mb-8 md:mb-12">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">Каталог взуття</h1>
+            <p className="text-gray-500 mt-2 text-sm md:text-base">Оптові ціни та швидка доставка по всій Україні</p>
+          </div>
+
+          <div className="flex items-center gap-3 self-end md:self-auto">
+            <span className="text-xs font-bold uppercase text-gray-400 tracking-widest">Сортувати:</span>
+            <select 
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="bg-gray-100 border-none rounded-xl px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-black outline-none cursor-pointer"
+            >
+              <option value="name">За алфавітом</option>
+              <option value="price-asc">Від дешевих</option>
+              <option value="price-desc">Від дорогих</option>
+            </select>
+          </div>
+        </div>
         
-        <div className="flex gap-2 mt-8 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex gap-2 mt-8 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
           {["Всі", ...CATEGORIES].map(cat => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
               className={cn(
-                "px-6 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap",
+                "px-5 md:px-6 py-2 rounded-full text-xs md:text-sm font-medium transition-all whitespace-nowrap",
                 activeCategory === cat 
                   ? "bg-black text-white shadow-lg shadow-gray-200" 
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -1028,6 +1051,17 @@ const Admin = () => {
   const [activeTab, setActiveTab] = useState<'products' | 'users'>('products');
   const [users, setUsers] = useState<UserProfile[]>([]);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   const updatePrice = async (id: string, newPrice: number) => {
     if (isNaN(newPrice) || newPrice < 0) {
       toast.error("Некоректна ціна");
@@ -1192,17 +1226,6 @@ const Admin = () => {
       processFiles(e.dataTransfer.files);
     }
   };
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -1518,138 +1541,210 @@ const Admin = () => {
           </div>
 
           <div className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm">
-            <table className="w-full text-left">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  <th className="px-4 py-3 text-[10px] font-bold uppercase text-gray-400 tracking-widest">Товар</th>
-                  <th className="px-4 py-3 text-[10px] font-bold uppercase text-gray-400 tracking-widest">Ціна</th>
-                  <th className="px-4 py-3 text-[10px] font-bold uppercase text-gray-400 tracking-widest">Статус</th>
-                  <th className="px-4 py-3 text-[10px] font-bold uppercase text-gray-400 tracking-widest text-right">Дії</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredProducts.map(product => (
-                  <tr key={product.id} className={cn("hover:bg-gray-50/50 transition-colors", editingId === product.id && "bg-gray-50")}>
-                    <td className="px-4 py-2">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-gray-50 border border-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
-                          <img src={product.images[0]} className="max-w-full max-h-full object-contain p-0.5" referrerPolicy="no-referrer" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-bold text-xs truncate">{product.name}</p>
-                          <p className="text-[10px] text-gray-400">{product.category}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-2">
-                      {inlinePriceEditId === product.id ? (
-                        <div className="flex flex-col gap-1 animate-in fade-in slide-in-from-left-2">
-                          <div className="flex items-center gap-1">
-                            <span className="text-[10px] font-bold text-gray-400">$</span>
-                            <input
-                              autoFocus
-                              type="number"
-                              value={inlinePriceValue}
-                              onChange={(e) => setInlinePriceValue(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') updatePrice(product.id, Number(inlinePriceValue));
-                                if (e.key === 'Escape') setInlinePriceEditId(null);
-                              }}
-                              className="w-16 px-1.5 py-1 text-xs font-bold border border-black rounded-lg outline-none shadow-sm"
-                            />
-                            <div className="flex gap-0.5">
-                              <button 
-                                onClick={() => updatePrice(product.id, Number(inlinePriceValue))}
-                                className="p-1 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                title="Зберегти"
-                              >
-                                <CheckCircle2 className="w-3.5 h-3.5" />
-                              </button>
-                              <button 
-                                onClick={() => setInlinePriceEditId(null)}
-                                className="p-1 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                title="Скасувати"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="px-4 py-3 text-[10px] font-bold uppercase text-gray-400 tracking-widest">Товар</th>
+                    <th className="px-4 py-3 text-[10px] font-bold uppercase text-gray-400 tracking-widest">Ціна</th>
+                    <th className="px-4 py-3 text-[10px] font-bold uppercase text-gray-400 tracking-widest">Статус</th>
+                    <th className="px-4 py-3 text-[10px] font-bold uppercase text-gray-400 tracking-widest text-right">Дії</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filteredProducts.map(product => (
+                    <tr key={product.id} className={cn("hover:bg-gray-50/50 transition-colors", editingId === product.id && "bg-gray-50")}>
+                      <td className="px-4 py-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-gray-50 border border-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
+                            <img src={product.images[0]} className="max-w-full max-h-full object-contain p-0.5" referrerPolicy="no-referrer" />
                           </div>
-                          <div className="text-[9px] text-gray-400 font-medium pl-2">{formatUAH(Number(inlinePriceValue) || 0)}</div>
-                        </div>
-                      ) : (
-                        <div 
-                          className="group cursor-pointer inline-flex flex-col"
-                          onClick={() => {
-                            setInlinePriceEditId(product.id);
-                            setInlinePriceValue(product.price.toString());
-                          }}
-                          title="Натисніть для швидкого редагування"
-                        >
-                          <div className="flex items-center gap-1.5">
-                            <div className="text-sm font-bold text-gray-900 group-hover:text-black transition-colors">${product.price}</div>
-                            <div className="opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-4px] group-hover:translate-x-0">
-                              <Settings className="w-3 h-3 text-gray-400" />
-                            </div>
+                          <div className="min-w-0">
+                            <p className="font-bold text-xs truncate">{product.name}</p>
+                            <p className="text-[10px] text-gray-400">{product.category}</p>
                           </div>
-                          <div className="text-[10px] text-gray-400 font-medium group-hover:text-gray-500 transition-colors">{formatUAH(product.price)}</div>
                         </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-2">
-                      <button
-                        onClick={() => toggleStock(product.id, product.inStock)}
-                        className={cn(
-                          "px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all hover:scale-105 active:scale-95",
-                          product.inStock 
-                            ? "bg-green-100 text-green-700 hover:bg-green-200" 
-                            : "bg-red-100 text-red-700 hover:bg-red-200"
-                        )}
-                        title="Натисніть для зміни статусу"
-                      >
-                        {product.inStock ? "В наявності" : "Немає"}
-                      </button>
-                    </td>
-                    <td className="px-4 py-2 text-right">
-                      <div className="flex justify-end items-center gap-1.5">
-                        {confirmDeleteId === product.id ? (
-                          <div className="flex items-center gap-1 bg-red-50 p-1 rounded-xl border border-red-100 animate-in fade-in zoom-in-95">
-                            <button 
-                              onClick={() => deleteProduct(product.id)}
-                              className="px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg hover:bg-red-600 transition-colors"
-                            >
-                              Видалити
-                            </button>
-                            <button 
-                              onClick={() => setConfirmDeleteId(null)}
-                              className="px-2 py-1 text-gray-400 text-[10px] font-bold hover:text-black transition-colors"
-                            >
-                              Скасувати
-                            </button>
+                      </td>
+                      <td className="px-4 py-2">
+                        {inlinePriceEditId === product.id ? (
+                          <div className="flex flex-col gap-1 animate-in fade-in slide-in-from-left-2">
+                            <div className="flex items-center gap-1">
+                              <span className="text-[10px] font-bold text-gray-400">$</span>
+                              <input
+                                autoFocus
+                                type="number"
+                                value={inlinePriceValue}
+                                onChange={(e) => setInlinePriceValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') updatePrice(product.id, Number(inlinePriceValue));
+                                  if (e.key === 'Escape') setInlinePriceEditId(null);
+                                }}
+                                className="w-16 px-1.5 py-1 text-xs font-bold border border-black rounded-lg outline-none shadow-sm"
+                              />
+                              <div className="flex gap-0.5">
+                                <button 
+                                  onClick={() => updatePrice(product.id, Number(inlinePriceValue))}
+                                  className="p-1 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                  title="Зберегти"
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button 
+                                  onClick={() => setInlinePriceEditId(null)}
+                                  className="p-1 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  title="Скасувати"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                            <div className="text-[9px] text-gray-400 font-medium pl-2">{formatUAH(Number(inlinePriceValue) || 0)}</div>
                           </div>
                         ) : (
-                          <>
-                            <button 
-                              onClick={() => startEdit(product)}
-                              className="p-1.5 hover:bg-gray-100 text-gray-400 hover:text-black rounded-lg transition-colors"
-                              title="Редагувати"
-                            >
-                              <Settings className="w-3.5 h-3.5" />
-                            </button>
-                            <button 
-                              onClick={() => setConfirmDeleteId(product.id)}
-                              className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors"
-                              title="Видалити"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </>
+                          <div 
+                            className="group cursor-pointer inline-flex flex-col"
+                            onClick={() => {
+                              setInlinePriceEditId(product.id);
+                              setInlinePriceValue(product.price.toString());
+                            }}
+                            title="Натисніть для швидкого редагування"
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <div className="text-sm font-bold text-gray-900 group-hover:text-black transition-colors">${product.price}</div>
+                              <div className="opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-4px] group-hover:translate-x-0">
+                                <Settings className="w-3 h-3 text-gray-400" />
+                              </div>
+                            </div>
+                            <div className="text-[10px] text-gray-400 font-medium group-hover:text-gray-500 transition-colors">{formatUAH(product.price)}</div>
+                          </div>
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </td>
+                      <td className="px-4 py-2">
+                        <button
+                          onClick={() => toggleStock(product.id, product.inStock)}
+                          className={cn(
+                            "px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all hover:scale-105 active:scale-95",
+                            product.inStock 
+                              ? "bg-green-100 text-green-700 hover:bg-green-200" 
+                              : "bg-red-100 text-red-700 hover:bg-red-200"
+                          )}
+                          title="Натисніть для зміни статусу"
+                        >
+                          {product.inStock ? "В наявності" : "Немає"}
+                        </button>
+                      </td>
+                      <td className="px-4 py-2 text-right">
+                        <div className="flex justify-end items-center gap-1.5">
+                          {confirmDeleteId === product.id ? (
+                            <div className="flex items-center gap-1 bg-red-50 p-1 rounded-xl border border-red-100 animate-in fade-in zoom-in-95">
+                              <button 
+                                onClick={() => deleteProduct(product.id)}
+                                className="px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg hover:bg-red-600 transition-colors"
+                              >
+                                Видалити
+                              </button>
+                              <button 
+                                onClick={() => setConfirmDeleteId(null)}
+                                className="px-2 py-1 text-gray-400 text-[10px] font-bold hover:text-black transition-colors"
+                              >
+                                Скасувати
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <button 
+                                onClick={() => startEdit(product)}
+                                className="p-1.5 hover:bg-gray-100 text-gray-400 hover:text-black rounded-lg transition-colors"
+                                title="Редагувати"
+                              >
+                                <Settings className="w-3.5 h-3.5" />
+                              </button>
+                              <button 
+                                onClick={() => setConfirmDeleteId(product.id)}
+                                className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors"
+                                title="Видалити"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden divide-y divide-gray-100">
+              {filteredProducts.map(product => (
+                <div key={product.id} className={cn("p-4 space-y-3", editingId === product.id && "bg-gray-50")}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-lg bg-gray-50 border border-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
+                      <img src={product.images[0]} className="max-w-full max-h-full object-contain p-0.5" referrerPolicy="no-referrer" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm truncate">{product.name}</p>
+                      <p className="text-[10px] text-gray-400">{product.category}</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-bold text-gray-900">${product.price}</div>
+                      <div className="text-[10px] text-gray-400">{formatUAH(product.price)}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between gap-2">
+                    <button
+                      onClick={() => toggleStock(product.id, product.inStock)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all",
+                        product.inStock 
+                          ? "bg-green-100 text-green-700" 
+                          : "bg-red-100 text-red-700"
+                      )}
+                    >
+                      {product.inStock ? "В наявності" : "Немає"}
+                    </button>
+                    
+                    <div className="flex items-center gap-2">
+                      {confirmDeleteId === product.id ? (
+                        <div className="flex items-center gap-1 bg-red-50 p-1 rounded-xl border border-red-100">
+                          <button 
+                            onClick={() => deleteProduct(product.id)}
+                            className="px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg"
+                          >
+                            Видалити
+                          </button>
+                          <button 
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="px-2 py-1 text-gray-400 text-[10px] font-bold"
+                          >
+                            Скасувати
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <button 
+                            onClick={() => startEdit(product)}
+                            className="p-2 bg-gray-100 text-gray-600 rounded-xl"
+                          >
+                            <Settings className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => setConfirmDeleteId(product.id)}
+                            className="p-2 bg-red-50 text-red-500 rounded-xl"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
             {filteredProducts.length === 0 && (
               <div className="p-12 text-center text-gray-400">
                 Товарів не знайдено
