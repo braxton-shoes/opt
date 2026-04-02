@@ -975,8 +975,8 @@ const Cart = ({ items, onRemove, onClear, onUpdateQuantity }: { items: CartItem[
                       className="flex items-center justify-between p-3 md:p-4 bg-gray-50/50 border-b border-gray-100 cursor-pointer hover:bg-gray-100/50 transition-colors gap-2"
                     >
                       <div className="flex items-center gap-3 md:gap-4 min-w-0">
-                        <div className="w-12 h-12 md:w-14 md:h-14 bg-gray-200 rounded-xl overflow-hidden flex-shrink-0 border border-gray-100">
-                          <img src={group.image} alt={group.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        <div className="w-12 h-12 md:w-14 md:h-14 bg-gray-50 rounded-xl overflow-hidden flex-shrink-0 border border-gray-100 flex items-center justify-center">
+                          <img src={group.image} alt={group.name} className="max-w-full max-h-full object-contain" referrerPolicy="no-referrer" />
                         </div>
                         <div className="min-w-0">
                           <h3 className="text-sm md:text-base font-bold text-gray-900 leading-tight truncate">{group.name}</h3>
