@@ -421,7 +421,7 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
                 exit={{ scale: 0.9, opacity: 0 }}
                 src={product.images[activeImage]} 
                 alt={product.name} 
-                className="max-w-full max-h-full object-contain"
+                className="max-w-full max-h-[85vh] md:max-h-[90vh] w-auto h-auto object-contain shadow-2xl rounded-sm"
                 referrerPolicy="no-referrer"
               />
               
