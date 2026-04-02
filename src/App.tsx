@@ -168,6 +168,14 @@ const useAuth = () => useContext(AuthContext);
 const Navbar = ({ cartCount }: { cartCount: number }) => {
   const { user, isAdmin, loading } = useAuth();
   
+  const handleLogin = async () => {
+    try {
+      await signInWithGoogle();
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
+  };
+
   return (
     <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -181,10 +189,10 @@ const Navbar = ({ cartCount }: { cartCount: number }) => {
               <span className="hidden sm:inline text-sm">Адмін</span>
             </Link>
           )}
-          <Link to="/cart" className="relative p-2 hover:bg-gray-50 rounded-full transition-colors">
-            <ShoppingCart className="w-6 h-6" />
+          <Link to="/cart" className="relative p-2.5 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all border border-gray-100 group">
+            <ShoppingCart className="w-5 h-5 md:w-6 md:h-6 text-gray-700 group-hover:text-black" />
             {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-black text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full">
+              <span className="absolute -top-2 -right-2 bg-black text-white text-[10px] md:text-[11px] font-bold w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-full shadow-lg border-2 border-white animate-in zoom-in">
                 {cartCount}
               </span>
             )}
@@ -204,7 +212,7 @@ const Navbar = ({ cartCount }: { cartCount: number }) => {
               </button>
             ) : (
               <button 
-                onClick={signInWithGoogle} 
+                onClick={handleLogin} 
                 className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-xl hover:bg-gray-800 transition-all font-medium"
                 title="Увійти"
               >
@@ -242,15 +250,15 @@ const ProductCard: React.FC<{ product: Product; onOpen: (p: Product) => void }> 
           </div>
         )}
       </div>
-      <div className="mt-4 space-y-1">
+      <div className="mt-4 space-y-1.5">
         <div className="flex justify-between items-start">
-          <h3 className="font-medium text-gray-900">{product.name}</h3>
+          <h3 className="text-sm md:text-base font-bold text-gray-900 leading-tight">{product.name}</h3>
           <div className="text-right">
-            <div className="text-black font-bold">${product.price}</div>
-            <div className="text-[10px] text-gray-400 font-medium">{formatUAH(product.price)}</div>
+            <div className="text-base md:text-lg text-black font-bold leading-none">${product.price}</div>
+            <div className="text-[10px] md:text-xs text-gray-400 font-medium mt-0.5">{formatUAH(product.price)}</div>
           </div>
         </div>
-        <p className="text-xs text-gray-500 uppercase tracking-wider">{product.category}</p>
+        <p className="text-[10px] md:text-xs text-gray-500 uppercase tracking-wider font-medium">{product.category}</p>
       </div>
     </motion.div>
   );
@@ -434,60 +442,60 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
               </div>
             )}
           </div>
-          <div className="p-3 md:p-8 flex flex-col min-w-0">
-            <div className="mb-4 md:mb-6">
-              <h2 className="text-lg md:text-2xl font-bold text-gray-900 break-words">{product.name}</h2>
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 mt-0.5">
-                <p className="text-black font-bold text-base md:text-xl">${product.price} <span className="text-[10px] text-gray-400 font-normal">/ пара</span></p>
-                <p className="text-gray-400 text-[9px] md:text-sm font-medium">({formatUAH(product.price)})</p>
+          <div className="p-4 md:p-8 flex flex-col min-w-0">
+            <div className="mb-6 md:mb-8">
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900 break-words leading-tight">{product.name}</h2>
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mt-1.5">
+                <p className="text-black font-bold text-lg md:text-2xl">${product.price} <span className="text-xs text-gray-400 font-normal">/ пара</span></p>
+                <p className="text-gray-400 text-xs md:text-sm font-medium">({formatUAH(product.price)})</p>
               </div>
               {product.description && (
-                <p className="text-[10px] md:text-sm text-gray-500 mt-2 leading-tight break-words">{product.description}</p>
+                <p className="text-xs md:text-sm text-gray-500 mt-3 leading-relaxed break-words">{product.description}</p>
               )}
             </div>
 
-            <div className="flex-1 space-y-4 md:space-y-6">
-              <div className="space-y-3 md:space-y-4">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1">
-                  <label className="text-[9px] md:text-xs font-bold uppercase text-gray-400 tracking-widest">Виберіть розміри</label>
+            <div className="flex-1 space-y-6 md:space-y-8">
+              <div className="space-y-4 md:space-y-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                  <label className="text-[10px] md:text-xs font-bold uppercase text-gray-400 tracking-widest">Виберіть розміри</label>
                   <div className="flex flex-wrap gap-2 md:gap-3">
                     <button 
                       onClick={handleAddAllSizes}
-                      className="text-[8px] md:text-[10px] text-black hover:underline uppercase font-bold tracking-wider transition-colors"
+                      className="bg-black/5 hover:bg-black/10 px-3 py-1.5 rounded-lg text-[10px] md:text-xs text-black uppercase font-bold tracking-wider transition-all"
                     >
                       Додати всі
                     </button>
                     <button 
                       onClick={() => setIndividualQuantities(product.sizes.reduce((acc, size) => ({ ...acc, [size]: 0 }), {}))}
-                      className="text-[8px] md:text-[10px] text-gray-400 hover:text-black uppercase font-bold tracking-wider transition-colors"
+                      className="px-3 py-1.5 rounded-lg text-[10px] md:text-xs text-gray-400 hover:text-black uppercase font-bold tracking-wider transition-all"
                     >
                       Очистити
                     </button>
                   </div>
                 </div>
-                <div className="grid gap-1.5 md:gap-2">
+                <div className="grid gap-2 md:gap-3">
                   {product.sizes.map(size => {
                     const inCart = getInCartCount(size);
                     const current = individualQuantities[size];
                     return (
-                      <div key={size} className="flex items-center justify-between p-2 md:p-3 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 group hover:border-gray-200 transition-all gap-2">
+                      <div key={size} className="flex items-center justify-between p-3 md:p-4 bg-gray-50 rounded-2xl border border-gray-100 group hover:border-gray-200 transition-all gap-3">
                         <div className="flex flex-col min-w-0 flex-1">
-                          <div className="flex items-center flex-wrap gap-1">
-                            <span className="text-[11px] md:text-sm font-bold text-gray-900 whitespace-nowrap">Розм. {size}</span>
+                          <div className="flex items-center flex-wrap gap-2">
+                            <span className="text-sm md:text-base font-bold text-gray-900 whitespace-nowrap">Розм. {size}</span>
                             {inCart > 0 && (
-                              <span className="text-[7px] md:text-[8px] bg-black text-white px-1 py-0.5 rounded-full font-bold uppercase tracking-tighter whitespace-nowrap">
+                              <span className="text-[8px] md:text-[10px] bg-black text-white px-1.5 py-0.5 rounded-full font-bold uppercase tracking-tighter whitespace-nowrap">
                                 {inCart} {current > 0 && <span className="text-gray-400">+{current}</span>}
                               </span>
                             )}
                           </div>
                           {current > 0 && (
-                            <span className="text-[8px] md:text-[9px] text-black font-medium truncate">+{current} пар</span>
+                            <span className="text-[10px] md:text-xs text-black font-medium truncate">+{current} пар</span>
                           )}
                         </div>
-                        <div className="flex items-center border border-gray-200 rounded-lg bg-white shadow-sm flex-shrink-0 overflow-hidden">
+                        <div className="flex items-center border border-gray-200 rounded-xl bg-white shadow-sm flex-shrink-0 overflow-hidden">
                           <button 
                             onClick={() => updateIndividualQty(size, -1)}
-                            className="p-2.5 md:p-2 hover:bg-gray-50 transition-colors border-r border-gray-100"
+                            className="p-3 md:p-2.5 hover:bg-gray-50 transition-colors border-r border-gray-100"
                             disabled={current === 0}
                           >
                             <Minus className={cn("w-4 h-4 md:w-3.5 md:h-3.5", current === 0 ? "text-gray-200" : "text-gray-600")} />
@@ -499,13 +507,13 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
                             onChange={(e) => updateIndividualQty(size, e.target.value)}
                             placeholder="0"
                             className={cn(
-                              "w-10 md:w-12 text-center font-bold text-xs md:text-sm outline-none bg-transparent",
+                              "w-12 md:w-14 text-center font-bold text-sm md:text-base outline-none bg-transparent",
                               current > 0 ? "text-black" : "text-gray-400"
                             )}
                           />
                           <button 
                             onClick={() => updateIndividualQty(size, 1)}
-                            className="p-2.5 md:p-2 hover:bg-gray-50 transition-colors border-l border-gray-100"
+                            className="p-3 md:p-2.5 hover:bg-gray-50 transition-colors border-l border-gray-100"
                           >
                             <Plus className="w-4 h-4 md:w-3.5 md:h-3.5 text-gray-600" />
                           </button>
@@ -517,17 +525,17 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
               </div>
             </div>
 
-            <div className="mt-4 md:mt-8 space-y-2 md:space-y-3">
+            <div className="mt-6 md:mt-10 space-y-3 md:space-y-4">
               <button 
                 onClick={handleAdd}
                 disabled={Object.values(individualQuantities).every(q => q === 0)}
-                className="w-full bg-black hover:bg-gray-800 text-white py-2.5 md:py-4 rounded-xl md:rounded-2xl font-bold transition-all shadow-lg shadow-gray-200 disabled:opacity-50 disabled:shadow-none text-[11px] md:text-base"
+                className="w-full bg-black hover:bg-gray-800 text-white py-4 md:py-5 rounded-2xl font-bold transition-all shadow-lg shadow-gray-200 disabled:opacity-50 disabled:shadow-none text-sm md:text-lg"
               >
                 Додати — ${totalIndividualPrice}
               </button>
               <button 
                 onClick={onClose}
-                className="w-full py-1.5 text-gray-400 hover:text-gray-600 text-[9px] md:text-sm font-medium transition-all"
+                className="w-full py-2 text-gray-400 hover:text-gray-600 text-xs md:text-sm font-medium transition-all"
               >
                 Закрити
               </button>
@@ -577,7 +585,9 @@ const Catalog = ({ onAddToCart, cartItems }: { onAddToCart: (item: CartItem) => 
       setProducts(productsData);
       setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, "products");
+      try {
+        handleFirestoreError(error, OperationType.LIST, "products");
+      } catch (e) {}
     });
 
     return unsubscribe;
@@ -608,12 +618,12 @@ const Catalog = ({ onAddToCart, cartItems }: { onAddToCart: (item: CartItem) => 
             <p className="text-gray-500 mt-2 text-sm md:text-base">Оптові ціни та швидка доставка по всій Україні</p>
           </div>
 
-          <div className="flex items-center gap-3 self-end md:self-auto">
-            <span className="text-xs font-bold uppercase text-gray-400 tracking-widest">Сортувати:</span>
+          <div className="flex items-center gap-3 self-start md:self-auto w-full md:w-auto">
+            <span className="text-[10px] md:text-xs font-bold uppercase text-gray-400 tracking-widest whitespace-nowrap">Сортувати:</span>
             <select 
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="bg-gray-100 border-none rounded-xl px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-black outline-none cursor-pointer"
+              className="flex-1 md:flex-none bg-gray-100 border-none rounded-xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-black outline-none cursor-pointer transition-all"
             >
               <option value="name">За алфавітом</option>
               <option value="price-asc">Від дешевих</option>
@@ -622,16 +632,16 @@ const Catalog = ({ onAddToCart, cartItems }: { onAddToCart: (item: CartItem) => 
           </div>
         </div>
         
-        <div className="flex gap-2 mt-8 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+        <div className="flex gap-2.5 mt-8 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
           {["Всі", ...CATEGORIES].map(cat => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
               className={cn(
-                "px-5 md:px-6 py-2 rounded-full text-xs md:text-sm font-medium transition-all whitespace-nowrap",
+                "px-6 md:px-8 py-2.5 md:py-3 rounded-2xl text-sm font-bold transition-all whitespace-nowrap border-2",
                 activeCategory === cat 
-                  ? "bg-black text-white shadow-lg shadow-gray-200" 
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  ? "bg-black border-black text-white shadow-xl shadow-gray-200 scale-105" 
+                  : "bg-gray-50 border-transparent text-gray-500 hover:bg-gray-100 hover:text-black"
               )}
             >
               {cat}
@@ -762,7 +772,11 @@ const Cart = ({ items, onRemove, onClear, onUpdateQuantity }: { items: CartItem[
       setStep('success');
       onClear();
     } catch (err) {
-      handleFirestoreError(err, OperationType.CREATE, "orders");
+      try {
+        handleFirestoreError(err, OperationType.CREATE, "orders");
+      } catch (systemErr) {
+        // System error is already logged in handleFirestoreError
+      }
       toast.error("Помилка при оформленні замовлення");
     } finally {
       setIsSubmitting(false);
@@ -1131,7 +1145,9 @@ const Admin = () => {
       toast.success("Ціну оновлено");
       setInlinePriceEditId(null);
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `products/${id}`);
+      try {
+        handleFirestoreError(error, OperationType.UPDATE, `products/${id}`);
+      } catch (systemErr) {}
       toast.error("Помилка оновлення ціни");
     }
   };
@@ -1141,7 +1157,9 @@ const Admin = () => {
       await updateDoc(doc(db, "products", id), { inStock: !currentStatus });
       toast.success(`Статус змінено: ${!currentStatus ? 'В наявності' : 'Немає'}`);
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `products/${id}`);
+      try {
+        handleFirestoreError(error, OperationType.UPDATE, `products/${id}`);
+      } catch (systemErr) {}
       toast.error("Помилка зміни статусу");
     }
   };
@@ -1165,7 +1183,9 @@ const Admin = () => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setProducts(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as Product));
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, "products");
+      try {
+        handleFirestoreError(error, OperationType.GET, "products");
+      } catch (e) {}
     });
     return unsubscribe;
   }, [isAdmin]);
@@ -1176,7 +1196,9 @@ const Admin = () => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setUsers(snapshot.docs.map(doc => ({ ...doc.data() }) as UserProfile));
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, "users");
+      try {
+        handleFirestoreError(error, OperationType.GET, "users");
+      } catch (e) {}
     });
     return unsubscribe;
   }, [isAdmin, activeTab]);
@@ -1194,7 +1216,9 @@ const Admin = () => {
       });
       toast.success("Роль оновлено");
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `users/${uid}`);
+      try {
+        handleFirestoreError(error, OperationType.UPDATE, `users/${uid}`);
+      } catch (systemErr) {}
       toast.error("Помилка оновлення ролі");
     }
   };
@@ -1203,7 +1227,7 @@ const Admin = () => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = adminCategory === "Всі" || p.category === adminCategory;
     return matchesSearch && matchesCategory;
-  });
+  }).sort((a, b) => a.name.localeCompare(b.name));
 
   console.log("Admin: Rendering", { authLoading, isAdmin });
   if (authLoading) return <div className="p-12 text-center">Завантаження...</div>;
@@ -1348,8 +1372,10 @@ const Admin = () => {
       resetForm();
     } catch (err) {
       console.error("Error saving product:", err);
+      try {
+        handleFirestoreError(err, editingId ? OperationType.UPDATE : OperationType.CREATE, "products");
+      } catch (systemErr) {}
       toast.error("Помилка при збереженні", { id: toastId });
-      handleFirestoreError(err, editingId ? OperationType.UPDATE : OperationType.CREATE, "products");
     }
   };
 
@@ -1372,7 +1398,9 @@ const Admin = () => {
       toast.success("Товар видалено");
       setConfirmDeleteId(null);
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `products/${id}`);
+      try {
+        handleFirestoreError(error, OperationType.DELETE, `products/${id}`);
+      } catch (systemErr) {}
       toast.error("Помилка при видаленні");
     }
   };
