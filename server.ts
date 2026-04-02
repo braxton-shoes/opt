@@ -36,15 +36,16 @@ async function startServer() {
   });
 
   app.post("/api/orders", async (req, res) => {
-    const order = req.body;
-    console.log("New Order Received:", order);
+    try {
+      const order = req.body;
+      console.log("New Order Received:", order);
 
-    // Telegram Notification Logic
-    const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    const chatId = process.env.TELEGRAM_CHAT_ID;
+      // Telegram Notification Logic
+      const botToken = process.env.TELEGRAM_BOT_TOKEN;
+      const chatId = process.env.TELEGRAM_CHAT_ID;
 
-    if (botToken && chatId) {
-      const message = `
+      if (botToken && chatId) {
+        const message = `
 📦 *НОВЕ ЗАМОВЛЕННЯ*
 👤 ${order.customer.name} (${order.customer.phone})
 📍 ${order.customer.city}, ${order.customer.delivery}
@@ -53,24 +54,28 @@ async function startServer() {
 ${order.items.map((item: any) => `- ${item.name} (${item.type === 'pack' ? 'Ростовка' : `Розм. ${item.size}`}): ${item.quantity} ${item.type === 'pack' ? 'ящ' : 'пар'}`).join('\n')}
 
 💰 *Разом до оплати:* $${order.total}
-      `;
+        `;
 
-      try {
-        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: message,
-            parse_mode: 'Markdown'
-          })
-        });
-      } catch (err) {
-        console.error("Failed to send Telegram notification:", err);
+        try {
+          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: message,
+              parse_mode: 'Markdown'
+            })
+          });
+        } catch (err) {
+          console.error("Failed to send Telegram notification:", err);
+        }
       }
-    }
 
-    res.status(201).json({ success: true });
+      res.status(201).json({ success: true });
+    } catch (err) {
+      console.error("Order processing error:", err);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
   });
 
   // Vite middleware for development
@@ -88,8 +93,12 @@ ${order.items.map((item: any) => `- ${item.name} (${item.type === 'pack' ? 'Ро
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  const server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
+  });
+
+  server.on('error', (err) => {
+    console.error("Express server error:", err);
   });
 }
 

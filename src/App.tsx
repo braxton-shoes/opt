@@ -271,6 +271,7 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
   );
   const [activeImage, setActiveImage] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
+  const tapStartPos = useRef({ x: 0, y: 0 });
 
   const nextImage = () => {
     setActiveImage(prev => (prev + 1) % product.images.length);
@@ -365,42 +366,58 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onTap={() => setIsZoomed(false)}
-            onPanEnd={(_, info) => {
-              if (product.images.length <= 1) return;
-              const swipeThreshold = 50;
-              if (info.offset.x < -swipeThreshold) nextImage();
-              else if (info.offset.x > swipeThreshold) prevImage();
-            }}
-            className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4 cursor-zoom-out touch-none"
+            className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4 touch-none"
           >
-            <motion.img 
-              key={activeImage}
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onTap={(e) => e.stopPropagation()}
-              src={product.images[activeImage]} 
-              alt={product.name} 
-              className="max-w-full max-h-full object-contain relative z-10"
-              referrerPolicy="no-referrer"
+            {/* Background overlay for tapping to close */}
+            <div 
+              className="absolute inset-0 cursor-zoom-out" 
+              onClick={() => setIsZoomed(false)}
             />
             
-            {product.images.length > 1 && (
-              <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-2">
-                {product.images.map((_, idx) => (
-                  <div 
-                    key={idx}
-                    className={cn(
-                      "w-2 h-2 rounded-full transition-all",
-                      activeImage === idx ? "bg-white w-6" : "bg-white/30"
-                    )}
-                  />
-                ))}
-              </div>
-            )}
+            <motion.div
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.2}
+              onDragEnd={(_, info) => {
+                try {
+                  if (product.images.length <= 1) return;
+                  const swipeThreshold = 50;
+                  if (info.offset.x < -swipeThreshold) nextImage();
+                  else if (info.offset.x > swipeThreshold) prevImage();
+                } catch (err) {
+                  console.error("Swipe error:", err);
+                }
+              }}
+              className="relative z-10 max-w-full max-h-full flex items-center justify-center cursor-grab active:cursor-grabbing"
+            >
+              <motion.img 
+                key={activeImage}
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                src={product.images[activeImage]} 
+                alt={product.name} 
+                className="max-w-full max-h-full object-contain"
+                referrerPolicy="no-referrer"
+              />
+              
+              {product.images.length > 1 && (
+                <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex gap-2">
+                  {product.images.map((_, idx) => (
+                    <div 
+                      key={idx}
+                      className={cn(
+                        "w-2 h-2 rounded-full transition-all",
+                        activeImage === idx ? "bg-white w-6" : "bg-white/30"
+                      )}
+                    />
+                  ))}
+                </div>
+              )}
+            </motion.div>
+
             <button 
-              className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+              className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-20"
               onClick={() => setIsZoomed(false)}
             >
               <X className="w-8 h-8" />
@@ -430,12 +447,24 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
           <div className="bg-gray-50 flex flex-col relative group/gallery border-b md:border-b-0 md:border-r border-gray-100 w-full overflow-hidden">
             <motion.div 
               className="aspect-square md:aspect-[3/4] overflow-hidden flex items-center justify-center p-2 md:p-4 relative cursor-zoom-in touch-pan-y"
-              onTap={() => setIsZoomed(true)}
               onPanEnd={(_, info) => {
                 if (product.images.length <= 1) return;
                 const swipeThreshold = 50;
                 if (info.offset.x < -swipeThreshold) nextImage();
                 else if (info.offset.x > swipeThreshold) prevImage();
+              }}
+              onTapStart={(_, info) => {
+                tapStartPos.current = info.point;
+              }}
+              onTap={(_, info) => {
+                const distance = Math.sqrt(
+                  Math.pow(info.point.x - tapStartPos.current.x, 2) +
+                  Math.pow(info.point.y - tapStartPos.current.y, 2)
+                );
+                // Only zoom if the pointer moved less than 10 pixels (a real tap)
+                if (distance < 10) {
+                  setIsZoomed(true);
+                }
               }}
             >
               <AnimatePresence mode="wait">
@@ -472,14 +501,20 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
                   </button>
                   
                   {/* Mobile Dots Indicator */}
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 md:hidden">
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 md:hidden z-10">
                     {product.images.map((_, idx) => (
-                      <div 
+                      <button 
                         key={idx}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveImage(idx);
+                        }}
                         className={cn(
                           "w-1.5 h-1.5 rounded-full transition-all",
                           activeImage === idx ? "bg-black w-4" : "bg-black/20"
                         )}
+                        aria-label={`Go to image ${idx + 1}`}
                       />
                     ))}
                   </div>
@@ -1305,7 +1340,7 @@ const Admin = () => {
     if (!isAdmin || activeTab !== 'users') return;
     const q = query(collection(db, "users"), orderBy("email"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setUsers(snapshot.docs.map(doc => ({ ...doc.data() }) as UserProfile));
+      setUsers(snapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id }) as UserProfile));
     }, (error) => {
       try {
         handleFirestoreError(error, OperationType.GET, "users");
