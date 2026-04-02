@@ -32,7 +32,15 @@ export const signInWithGoogle = async () => {
     throw error;
   }
 };
-export const logout = () => signOut(auth);
+
+export const logout = async () => {
+  try {
+    await signOut(auth);
+  } catch (error) {
+    console.error("Logout error:", error);
+    toast.error("Помилка при виході з акаунта");
+  }
+};
 
 // Error Handling
 export enum OperationType {

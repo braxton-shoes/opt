@@ -365,8 +365,14 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setIsZoomed(false)}
-            className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4 cursor-zoom-out"
+            onTap={() => setIsZoomed(false)}
+            onPanEnd={(_, info) => {
+              if (product.images.length <= 1) return;
+              const swipeThreshold = 50;
+              if (info.offset.x < -swipeThreshold) nextImage();
+              else if (info.offset.x > swipeThreshold) prevImage();
+            }}
+            className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4 cursor-zoom-out touch-none"
           >
             <motion.img 
               key={activeImage}
@@ -377,12 +383,6 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
               alt={product.name} 
               className="max-w-full max-h-full object-contain pointer-events-none"
               referrerPolicy="no-referrer"
-              onPanEnd={(_, info) => {
-                if (product.images.length <= 1) return;
-                const swipeThreshold = 50;
-                if (info.offset.x < -swipeThreshold) nextImage();
-                else if (info.offset.x > swipeThreshold) prevImage();
-              }}
             />
             
             {product.images.length > 1 && (
@@ -429,7 +429,7 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
           <div className="bg-gray-50 flex flex-col relative group/gallery border-b md:border-b-0 md:border-r border-gray-100 w-full overflow-hidden">
             <motion.div 
               className="aspect-square md:aspect-[3/4] overflow-hidden flex items-center justify-center p-2 md:p-4 relative cursor-zoom-in touch-pan-y"
-              onClick={() => setIsZoomed(true)}
+              onTap={() => setIsZoomed(true)}
               onPanEnd={(_, info) => {
                 if (product.images.length <= 1) return;
                 const swipeThreshold = 50;

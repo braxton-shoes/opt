@@ -93,4 +93,7 @@ ${order.items.map((item: any) => `- ${item.name} (${item.type === 'pack' ? 'Ро
   });
 }
 
-startServer();
+startServer().catch(err => {
+  console.error("Failed to start server:", err);
+  process.exit(1);
+});
