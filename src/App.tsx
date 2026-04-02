@@ -1,6 +1,6 @@
 import React, { useState, useEffect, createContext, useContext, Component, ErrorInfo, useRef } from "react";
 import { HashRouter as Router, Routes, Route, Link, Navigate, useLocation } from "react-router-dom";
-import { ShoppingCart, Package, User, Phone, MapPin, Truck, ChevronLeft, ChevronRight, ChevronDown, X, Plus, Minus, CheckCircle2, Settings, Image as ImageIcon, Trash2, LogIn, LogOut, Search, ZoomIn } from "lucide-react";
+import { ShoppingCart, Package, User, Phone, MapPin, Truck, ChevronLeft, ChevronRight, ChevronDown, X, Plus, Minus, CheckCircle2, Check, Settings, Image as ImageIcon, Trash2, LogIn, LogOut, Search, ZoomIn } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Toaster, toast } from "sonner";
 import { cn } from "@/src/lib/utils";
@@ -814,6 +814,8 @@ const Cart = ({ items, onRemove, onClear, onUpdateQuantity }: { items: CartItem[
 
   const [confirmClear, setConfirmClear] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmDeleteGroupId, setConfirmDeleteGroupId] = useState<string | null>(null);
 
   const toggleGroup = (productId: string) => {
     setExpandedGroups(prev => ({ ...prev, [productId]: !prev[productId] }));
@@ -997,6 +999,29 @@ const Cart = ({ items, onRemove, onClear, onUpdateQuantity }: { items: CartItem[
                           <div className="text-sm md:text-base font-black text-gray-900">${groupTotal}</div>
                           <div className="text-[9px] md:text-[10px] text-gray-400 font-medium">{formatUAH(groupTotal)}</div>
                         </div>
+                        
+                        {isExpanded && (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirmDeleteGroupId === productId) {
+                                group.items.forEach(item => onRemove(item.id));
+                                setConfirmDeleteGroupId(null);
+                              } else {
+                                setConfirmDeleteGroupId(productId);
+                                setTimeout(() => setConfirmDeleteGroupId(null), 3000);
+                              }
+                            }}
+                            className={cn(
+                              "p-2 rounded-xl transition-all flex items-center justify-center",
+                              confirmDeleteGroupId === productId ? "bg-red-500 text-white" : "bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-500"
+                            )}
+                            title="Видалити всю модель"
+                          >
+                            {confirmDeleteGroupId === productId ? <Check className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
+                          </button>
+                        )}
+
                         <motion.div
                           animate={{ rotate: isExpanded ? 180 : 0 }}
                           transition={{ duration: 0.2 }}
@@ -1017,53 +1042,60 @@ const Cart = ({ items, onRemove, onClear, onUpdateQuantity }: { items: CartItem[
                         >
                           <div className="p-3 grid grid-cols-1 gap-2 bg-white border-t border-gray-50">
                             {group.items.map(item => (
-                              <div key={item.id} className="flex items-center justify-between bg-gray-50/50 p-2.5 rounded-2xl border border-gray-100/50 hover:border-gray-200 transition-colors">
-                                <div className="flex items-center gap-4 md:gap-8">
+                              <div key={item.id} className="flex items-center justify-between bg-gray-50/50 p-3 rounded-2xl border border-gray-100/50 hover:border-gray-200 transition-colors">
+                                <div className="flex items-center gap-4 md:gap-10">
                                   <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center shadow-sm">
-                                      <span className="text-xs font-black text-gray-900">{item.size}</span>
+                                    <div className="w-9 h-9 rounded-xl bg-white border border-gray-100 flex items-center justify-center shadow-sm">
+                                      <span className="text-sm font-black text-gray-900">{item.size}</span>
                                     </div>
                                     {item.type === 'pack' && (
-                                      <span className="text-[8px] bg-black text-white px-1.5 py-0.5 rounded-md font-bold uppercase tracking-tighter">
+                                      <span className="text-[9px] bg-black text-white px-2 py-0.5 rounded-md font-bold uppercase tracking-tighter">
                                         Пак
                                       </span>
                                     )}
                                   </div>
                                   
-                                  <div className="flex items-center gap-3">
-                                    <div className="flex items-center border border-gray-200 rounded-xl bg-white h-8 overflow-hidden shadow-sm">
-                                      <button 
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          onUpdateQuantity(item.id, -1);
-                                        }}
-                                        className="px-2 h-full hover:bg-gray-50 transition-colors text-gray-400 hover:text-black"
-                                      >
-                                        <Minus className="w-2.5 h-2.5" />
-                                      </button>
-                                      <span className="w-6 text-center font-bold text-[11px] text-gray-900">{item.quantity}</span>
-                                      <button 
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          onUpdateQuantity(item.id, 1);
-                                        }}
-                                        className="px-2 h-full hover:bg-gray-50 transition-colors text-gray-400 hover:text-black"
-                                      >
-                                        <Plus className="w-2.5 h-2.5" />
-                                      </button>
-                                    </div>
-
+                                  <div className="flex items-center border border-gray-200 rounded-xl bg-white h-10 overflow-hidden shadow-sm">
                                     <button 
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        onRemove(item.id);
+                                        onUpdateQuantity(item.id, -1);
                                       }}
-                                      className="p-1.5 text-gray-300 hover:text-red-500 transition-colors"
+                                      className="px-3 h-full hover:bg-gray-50 transition-colors text-gray-400 hover:text-black"
                                     >
-                                      <Trash2 className="w-4 h-4" />
+                                      <Minus className="w-3.5 h-3.5" />
+                                    </button>
+                                    <span className="w-8 text-center font-bold text-sm text-gray-900">{item.quantity}</span>
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onUpdateQuantity(item.id, 1);
+                                      }}
+                                      className="px-3 h-full hover:bg-gray-50 transition-colors text-gray-400 hover:text-black"
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
                                     </button>
                                   </div>
                                 </div>
+
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (confirmDeleteId === item.id) {
+                                      onRemove(item.id);
+                                      setConfirmDeleteId(null);
+                                    } else {
+                                      setConfirmDeleteId(item.id);
+                                      setTimeout(() => setConfirmDeleteId(null), 3000);
+                                    }
+                                  }}
+                                  className={cn(
+                                    "p-2 transition-all ml-4 rounded-xl flex items-center justify-center",
+                                    confirmDeleteId === item.id ? "bg-red-500 text-white" : "text-gray-300 hover:text-red-500"
+                                  )}
+                                >
+                                  {confirmDeleteId === item.id ? <Check className="w-5 h-5" /> : <Trash2 className="w-5 h-5" />}
+                                </button>
                               </div>
                             ))}
                           </div>
