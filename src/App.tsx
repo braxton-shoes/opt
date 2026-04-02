@@ -374,6 +374,30 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
               onClick={() => setIsZoomed(false)}
             />
             
+            {/* Navigation Arrows (Desktop) */}
+            {product.images.length > 1 && (
+              <>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    prevImage();
+                  }}
+                  className="hidden md:flex absolute left-8 top-1/2 -translate-y-1/2 p-4 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all z-30 group"
+                >
+                  <ChevronLeft className="w-10 h-10 group-hover:-translate-x-1 transition-transform" />
+                </button>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    nextImage();
+                  }}
+                  className="hidden md:flex absolute right-8 top-1/2 -translate-y-1/2 p-4 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all z-30 group"
+                >
+                  <ChevronRight className="w-10 h-10 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </>
+            )}
+
             <motion.div
               drag="x"
               dragConstraints={{ left: 0, right: 0 }}
@@ -402,16 +426,25 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
               />
               
               {product.images.length > 1 && (
-                <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex gap-2">
-                  {product.images.map((_, idx) => (
-                    <div 
-                      key={idx}
-                      className={cn(
-                        "w-2 h-2 rounded-full transition-all",
-                        activeImage === idx ? "bg-white w-6" : "bg-white/30"
-                      )}
-                    />
-                  ))}
+                <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4">
+                  <div className="flex gap-2">
+                    {product.images.map((_, idx) => (
+                      <button 
+                        key={idx}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveImage(idx);
+                        }}
+                        className={cn(
+                          "w-2 h-2 rounded-full transition-all",
+                          activeImage === idx ? "bg-white w-8" : "bg-white/30 hover:bg-white/50"
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-white/60 text-xs font-bold tracking-widest uppercase">
+                    {activeImage + 1} / {product.images.length}
+                  </span>
                 </div>
               )}
             </motion.div>
