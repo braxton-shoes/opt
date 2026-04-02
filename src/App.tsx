@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext, Component, ErrorInfo } from "react";
+import React, { useState, useEffect, createContext, useContext, Component, ErrorInfo, useRef } from "react";
 import { HashRouter as Router, Routes, Route, Link, Navigate, useLocation } from "react-router-dom";
 import { ShoppingCart, Package, User, Phone, MapPin, Truck, ChevronLeft, ChevronRight, X, Plus, Minus, CheckCircle2, Settings, Image as ImageIcon, Trash2, LogIn, LogOut, Search, ZoomIn } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -280,7 +280,7 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [product.images.length]);
+  }, [product.images.length, onClose]);
 
   const getInCartCount = (size: string) => {
     return cartItems
@@ -321,17 +321,28 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
     toast.success("Додано в кошик");
   };
 
-  const updateIndividualQty = (size: string, delta: number) => {
-    setIndividualQuantities(prev => ({
-      ...prev,
-      [size]: Math.max(0, prev[size] + delta)
-    }));
+  const updateIndividualQty = (size: string, delta: number | string) => {
+    setIndividualQuantities(prev => {
+      const currentVal = prev[size] || 0;
+      let newVal: number;
+      
+      if (typeof delta === 'string') {
+        newVal = parseInt(delta) || 0;
+      } else {
+        newVal = currentVal + delta;
+      }
+      
+      return {
+        ...prev,
+        [size]: Math.max(0, newVal)
+      };
+    });
   };
 
   const totalIndividualPrice = Object.entries(individualQuantities).reduce((acc, [_, qty]) => acc + ((qty as number) * product.price), 0);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 md:p-4">
       <AnimatePresence>
         {isZoomed && (
           <motion.div 
@@ -380,7 +391,7 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
         <div className="grid md:grid-cols-2 max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <div className="bg-gray-50 flex flex-col relative group/gallery border-b md:border-b-0 md:border-r border-gray-100 w-full overflow-hidden">
             <div 
-              className="aspect-[3/4] overflow-hidden flex items-center justify-center p-4 relative cursor-zoom-in"
+              className="aspect-square md:aspect-[3/4] overflow-hidden flex items-center justify-center p-2 md:p-4 relative cursor-zoom-in"
               onClick={() => setIsZoomed(true)}
             >
               <img src={product.images[activeImage]} alt={product.name} className="max-w-full max-h-full object-contain" referrerPolicy="no-referrer" />
@@ -423,72 +434,80 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
               </div>
             )}
           </div>
-          <div className="p-4 md:p-8 flex flex-col min-w-0">
-            <div className="mb-6">
-              <h2 className="text-xl md:text-2xl font-bold text-gray-900 break-words">{product.name}</h2>
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-1">
-                <p className="text-black font-bold text-lg md:text-xl">${product.price} <span className="text-xs text-gray-400 font-normal">/ пара</span></p>
-                <p className="text-gray-400 text-[10px] md:text-sm font-medium">({formatUAH(product.price)})</p>
+          <div className="p-3 md:p-8 flex flex-col min-w-0">
+            <div className="mb-4 md:mb-6">
+              <h2 className="text-lg md:text-2xl font-bold text-gray-900 break-words">{product.name}</h2>
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 mt-0.5">
+                <p className="text-black font-bold text-base md:text-xl">${product.price} <span className="text-[10px] text-gray-400 font-normal">/ пара</span></p>
+                <p className="text-gray-400 text-[9px] md:text-sm font-medium">({formatUAH(product.price)})</p>
               </div>
               {product.description && (
-                <p className="text-xs md:text-sm text-gray-500 mt-4 leading-relaxed break-words">{product.description}</p>
+                <p className="text-[10px] md:text-sm text-gray-500 mt-2 leading-tight break-words">{product.description}</p>
               )}
             </div>
 
-            <div className="flex-1 space-y-6">
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                  <label className="text-[10px] md:text-xs font-bold uppercase text-gray-400 tracking-widest">Виберіть розміри</label>
+            <div className="flex-1 space-y-4 md:space-y-6">
+              <div className="space-y-3 md:space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1">
+                  <label className="text-[9px] md:text-xs font-bold uppercase text-gray-400 tracking-widest">Виберіть розміри</label>
                   <div className="flex flex-wrap gap-2 md:gap-3">
                     <button 
                       onClick={handleAddAllSizes}
-                      className="text-[9px] md:text-[10px] text-black hover:underline uppercase font-bold tracking-wider transition-colors"
+                      className="text-[8px] md:text-[10px] text-black hover:underline uppercase font-bold tracking-wider transition-colors"
                     >
                       Додати всі
                     </button>
                     <button 
                       onClick={() => setIndividualQuantities(product.sizes.reduce((acc, size) => ({ ...acc, [size]: 0 }), {}))}
-                      className="text-[9px] md:text-[10px] text-gray-400 hover:text-black uppercase font-bold tracking-wider transition-colors"
+                      className="text-[8px] md:text-[10px] text-gray-400 hover:text-black uppercase font-bold tracking-wider transition-colors"
                     >
                       Очистити
                     </button>
                   </div>
                 </div>
-                <div className="grid gap-2">
+                <div className="grid gap-1.5 md:gap-2">
                   {product.sizes.map(size => {
                     const inCart = getInCartCount(size);
                     const current = individualQuantities[size];
                     return (
-                      <div key={size} className="flex items-center justify-between p-2.5 md:p-3 bg-gray-50 rounded-2xl border border-gray-100 group hover:border-gray-200 transition-all gap-2">
+                      <div key={size} className="flex items-center justify-between p-2 md:p-3 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 group hover:border-gray-200 transition-all gap-2">
                         <div className="flex flex-col min-w-0 flex-1">
-                          <div className="flex items-center flex-wrap gap-1.5">
-                            <span className="text-xs md:text-sm font-bold text-gray-900 whitespace-nowrap">Розм. {size}</span>
+                          <div className="flex items-center flex-wrap gap-1">
+                            <span className="text-[11px] md:text-sm font-bold text-gray-900 whitespace-nowrap">Розм. {size}</span>
                             {inCart > 0 && (
-                              <span className="text-[8px] bg-black text-white px-1.5 py-0.5 rounded-full font-bold uppercase tracking-tighter whitespace-nowrap">
+                              <span className="text-[7px] md:text-[8px] bg-black text-white px-1 py-0.5 rounded-full font-bold uppercase tracking-tighter whitespace-nowrap">
                                 {inCart} {current > 0 && <span className="text-gray-400">+{current}</span>}
                               </span>
                             )}
                           </div>
                           {current > 0 && (
-                            <span className="text-[9px] text-black font-medium truncate">+{current} пар</span>
+                            <span className="text-[8px] md:text-[9px] text-black font-medium truncate">+{current} пар</span>
                           )}
                         </div>
-                        <div className="flex items-center border border-gray-200 rounded-xl bg-white shadow-sm flex-shrink-0">
+                        <div className="flex items-center border border-gray-200 rounded-lg bg-white shadow-sm flex-shrink-0 overflow-hidden">
                           <button 
                             onClick={() => updateIndividualQty(size, -1)}
-                            className="p-1.5 md:p-2 hover:bg-gray-50 rounded-l-xl transition-colors"
+                            className="p-2.5 md:p-2 hover:bg-gray-50 transition-colors border-r border-gray-100"
                             disabled={current === 0}
                           >
-                            <Minus className={cn("w-3 h-3 md:w-3.5 md:h-3.5", current === 0 ? "text-gray-200" : "text-gray-600")} />
+                            <Minus className={cn("w-4 h-4 md:w-3.5 md:h-3.5", current === 0 ? "text-gray-200" : "text-gray-600")} />
                           </button>
-                          <span className={cn("w-6 md:w-8 text-center font-bold text-xs md:text-sm", current > 0 ? "text-black" : "text-gray-400")}>
-                            {current}
-                          </span>
+                          <input 
+                            type="number"
+                            inputMode="numeric"
+                            value={current || ''}
+                            onChange={(e) => updateIndividualQty(size, e.target.value)}
+                            placeholder="0"
+                            className={cn(
+                              "w-10 md:w-12 text-center font-bold text-xs md:text-sm outline-none bg-transparent",
+                              current > 0 ? "text-black" : "text-gray-400"
+                            )}
+                          />
                           <button 
                             onClick={() => updateIndividualQty(size, 1)}
-                            className="p-1.5 md:p-2 hover:bg-gray-50 rounded-r-xl transition-colors"
+                            className="p-2.5 md:p-2 hover:bg-gray-50 transition-colors border-l border-gray-100"
                           >
-                            <Plus className="w-3 h-3 md:w-3.5 md:h-3.5 text-gray-600" />
+                            <Plus className="w-4 h-4 md:w-3.5 md:h-3.5 text-gray-600" />
                           </button>
                         </div>
                       </div>
@@ -498,19 +517,19 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
               </div>
             </div>
 
-            <div className="mt-8 space-y-3">
+            <div className="mt-4 md:mt-8 space-y-2 md:space-y-3">
               <button 
                 onClick={handleAdd}
                 disabled={Object.values(individualQuantities).every(q => q === 0)}
-                className="w-full bg-black hover:bg-gray-800 text-white py-4 rounded-2xl font-bold transition-all shadow-lg shadow-gray-200 disabled:opacity-50 disabled:shadow-none"
+                className="w-full bg-black hover:bg-gray-800 text-white py-2.5 md:py-4 rounded-xl md:rounded-2xl font-bold transition-all shadow-lg shadow-gray-200 disabled:opacity-50 disabled:shadow-none text-[11px] md:text-base"
               >
-                Додати в кошик — ${totalIndividualPrice} ({formatUAH(totalIndividualPrice)})
+                Додати — ${totalIndividualPrice}
               </button>
               <button 
                 onClick={onClose}
-                className="w-full py-3 text-gray-400 hover:text-gray-600 text-sm font-medium transition-all"
+                className="w-full py-1.5 text-gray-400 hover:text-gray-600 text-[9px] md:text-sm font-medium transition-all"
               >
-                Завершити та закрити
+                Закрити
               </button>
             </div>
           </div>
@@ -528,6 +547,25 @@ const Catalog = ({ onAddToCart, cartItems }: { onAddToCart: (item: CartItem) => 
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string>("Всі");
   const [sortBy, setSortBy] = useState<"name" | "price-asc" | "price-desc">("name");
+
+  // Handle back button to close modal
+  useEffect(() => {
+    if (selectedProduct) {
+      window.history.pushState({ modalOpen: true }, "");
+      
+      const handlePopState = () => {
+        setSelectedProduct(null);
+      };
+
+      window.addEventListener("popstate", handlePopState);
+      return () => {
+        window.removeEventListener("popstate", handlePopState);
+        if (window.history.state?.modalOpen) {
+          window.history.back();
+        }
+      };
+    }
+  }, [selectedProduct]);
 
   useEffect(() => {
     const q = query(collection(db, "products"), orderBy("name"));
@@ -668,36 +706,57 @@ const Cart = ({ items, onRemove, onClear, onUpdateQuantity }: { items: CartItem[
       
       await addDoc(collection(db, "orders"), orderData);
 
-      // 2. Notify via Telegram (Directly from client for GitHub Pages)
+      // 2. Notify via Telegram
       const botToken = "8421404977:AAEAgbBfKNvTcX_n8mcKGf_BMxewEeiFT6s";
       const chatId = "223733844";
       
-      const message = `
-🛍️ *Нове замовлення!*
-👤 *Клієнт:* ${formData.name}
-📞 *Телефон:* ${formData.phone}
-📍 *Місто:* ${formData.city}
-🚚 *Доставка:* ${formData.delivery}
+      // Group items by product name for better readability
+      const groupedByProduct = items.reduce((acc, item) => {
+        if (!acc[item.name]) acc[item.name] = [];
+        acc[item.name].push(item);
+        return acc;
+      }, {} as Record<string, CartItem[]>);
 
-📦 *Товари:*
-${items.map(item => `- ${item.name} (${item.type === 'pack' ? 'Ростовка' : `Розм. ${item.size}`}): ${item.quantity} ${item.type === 'pack' ? 'ящ' : 'пар'} x $${item.price}`).join('\n')}
+      const header = `🛍️ *Нове замовлення!*\n👤 *Клієнт:* ${formData.name}\n📞 *Телефон:* ${formData.phone}\n📍 *Місто:* ${formData.city}\n🚚 *Доставка:* ${formData.delivery}\n\n📦 *Товари:*`;
+      
+      const productSections = Object.entries(groupedByProduct).map(([name, productItems]) => {
+        const itemsList = productItems.map(item => 
+          `  • ${item.type === 'pack' ? 'Ростовка' : `Розм. ${item.size}`}: ${item.quantity} ${item.type === 'pack' ? 'ящ' : 'пар'} x $${item.price}`
+        ).join('\n');
+        return `👟 *${name}*\n${itemsList}\n────────────────`;
+      });
 
-💰 *Разом:* $${total}
-      `;
+      const footer = `\n💰 *Разом:* $${total}`;
+      
+      // Telegram message limit is 4096 characters
+      const MAX_LENGTH = 4000;
+      let currentMessage = header;
+      const messagesToSend: string[] = [];
 
-      try {
-        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: message,
-            parse_mode: "Markdown"
-          }),
-        });
-      } catch (tgErr) {
-        console.error("Telegram notification failed:", tgErr);
-        // We don't block the success screen if only Telegram fails
+      productSections.forEach((section) => {
+        if ((currentMessage + section).length > MAX_LENGTH) {
+          messagesToSend.push(currentMessage);
+          currentMessage = section;
+        } else {
+          currentMessage += '\n' + section;
+        }
+      });
+      messagesToSend.push(currentMessage + footer);
+
+      for (const msg of messagesToSend) {
+        try {
+          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: msg,
+              parse_mode: "Markdown"
+            }),
+          });
+        } catch (tgErr) {
+          console.error("Telegram notification failed for a chunk:", tgErr);
+        }
       }
       
       setStep('success');
