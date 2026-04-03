@@ -382,18 +382,18 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
                     e.stopPropagation();
                     prevImage();
                   }}
-                  className="hidden md:flex absolute left-8 top-1/2 -translate-y-1/2 p-4 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all z-30 group"
+                  className="hidden md:flex fixed left-4 lg:left-12 top-1/2 -translate-y-1/2 p-5 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all z-[210] group backdrop-blur-sm border border-white/10"
                 >
-                  <ChevronLeft className="w-10 h-10 group-hover:-translate-x-1 transition-transform" />
+                  <ChevronLeft className="w-12 h-12 group-hover:-translate-x-1 transition-transform" />
                 </button>
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
                     nextImage();
                   }}
-                  className="hidden md:flex absolute right-8 top-1/2 -translate-y-1/2 p-4 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all z-30 group"
+                  className="hidden md:flex fixed right-4 lg:right-12 top-1/2 -translate-y-1/2 p-5 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all z-[210] group backdrop-blur-sm border border-white/10"
                 >
-                  <ChevronRight className="w-10 h-10 group-hover:translate-x-1 transition-transform" />
+                  <ChevronRight className="w-12 h-12 group-hover:translate-x-1 transition-transform" />
                 </button>
               </>
             )}
@@ -412,7 +412,7 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
                   console.error("Swipe error:", err);
                 }
               }}
-              className="relative z-10 max-w-full max-h-full flex items-center justify-center cursor-grab active:cursor-grabbing"
+              className="relative z-10 w-full h-full flex items-center justify-center cursor-grab active:cursor-grabbing px-20 lg:px-40"
             >
               <motion.img 
                 key={activeImage}
@@ -867,13 +867,14 @@ const Cart = ({ items, onRemove, onClear, onUpdateQuantity }: { items: CartItem[
       const header = `🛍️ *Нове замовлення!*\n👤 *Клієнт:* ${formData.name}\n📞 *Телефон:* ${formData.phone}\n📍 *Місто:* ${formData.city}\n🚚 *Доставка:* ${formData.delivery}\n\n📦 *Товари:*`;
       
       const productSections = Object.entries(groupedByProduct).map(([name, productItems]) => {
+        const productTotalPairs = productItems.reduce((sum, item) => sum + item.quantity, 0);
         const itemsList = productItems.map(item => 
           `  • ${item.type === 'pack' ? 'Ростовка' : `${item.size}`}: ${item.quantity} ${item.type === 'pack' ? 'ящ' : 'пар'} x $${item.price}`
         ).join('\n');
-        return `👟 *${name}*\n${itemsList}\n────────────────`;
+        return `👟 *${name}*\n${itemsList}\n📊 *Всього по моделі:* ${productTotalPairs} пар\n────────────────`;
       });
 
-      const footer = `\n💰 *Разом:* $${total}`;
+      const footer = `\n📦 *Загальна кількість:* ${totalQuantity} пар\n💰 *Разом:* $${total}`;
       
       // Telegram message limit is 4096 characters
       const MAX_LENGTH = 4000;
