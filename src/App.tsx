@@ -478,59 +478,61 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
         
         <div className="grid md:grid-cols-2 max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <div className="bg-gray-50 flex flex-col relative group/gallery border-b md:border-b-0 md:border-r border-gray-100 w-full overflow-hidden">
-            <motion.div 
-              className="aspect-square md:aspect-[3/4] overflow-hidden flex items-center justify-center p-2 md:p-4 relative cursor-zoom-in touch-pan-y"
-              onPanEnd={(_, info) => {
-                if (product.images.length <= 1) return;
-                const swipeThreshold = 50;
-                if (info.offset.x < -swipeThreshold) nextImage();
-                else if (info.offset.x > swipeThreshold) prevImage();
-              }}
-              onTapStart={(_, info) => {
-                tapStartPos.current = info.point;
-              }}
-              onTap={(_, info) => {
-                const distance = Math.sqrt(
-                  Math.pow(info.point.x - tapStartPos.current.x, 2) +
-                  Math.pow(info.point.y - tapStartPos.current.y, 2)
-                );
-                // Only zoom if the pointer moved less than 10 pixels (a real tap)
-                if (distance < 10) {
-                  setIsZoomed(true);
-                }
-              }}
-            >
-              <AnimatePresence mode="wait">
-                <motion.img 
-                  key={activeImage}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.2 }}
-                  src={product.images[activeImage]} 
-                  alt={product.name} 
-                  className="max-w-full max-h-full object-contain" 
-                  referrerPolicy="no-referrer" 
-                />
-              </AnimatePresence>
-              
-              <div className="absolute top-4 left-4 p-2 bg-white/80 rounded-full opacity-0 group-hover/gallery:opacity-100 transition-opacity">
-                <ZoomIn className="w-5 h-5 text-gray-600" />
-              </div>
-              
+            <div className="relative w-full">
+              <motion.div 
+                className="w-full aspect-square md:aspect-[4/5] overflow-hidden flex items-center justify-center p-2 md:p-4 relative cursor-zoom-in touch-pan-y"
+                onPanEnd={(_, info) => {
+                  if (product.images.length <= 1) return;
+                  const swipeThreshold = 50;
+                  if (info.offset.x < -swipeThreshold) nextImage();
+                  else if (info.offset.x > swipeThreshold) prevImage();
+                }}
+                onTapStart={(_, info) => {
+                  tapStartPos.current = info.point;
+                }}
+                onTap={(_, info) => {
+                  const distance = Math.sqrt(
+                    Math.pow(info.point.x - tapStartPos.current.x, 2) +
+                    Math.pow(info.point.y - tapStartPos.current.y, 2)
+                  );
+                  // Only zoom if the pointer moved less than 10 pixels (a real tap)
+                  if (distance < 10) {
+                    setIsZoomed(true);
+                  }
+                }}
+              >
+                <AnimatePresence mode="wait">
+                  <motion.img 
+                    key={activeImage}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.2 }}
+                    src={product.images[activeImage]} 
+                    alt={product.name} 
+                    className="max-w-full max-h-full object-contain" 
+                    referrerPolicy="no-referrer" 
+                  />
+                </AnimatePresence>
+                
+                <div className="absolute top-4 left-4 p-2 bg-white/80 rounded-full opacity-0 group-hover/gallery:opacity-100 transition-opacity">
+                  <ZoomIn className="w-5 h-5 text-gray-600" />
+                </div>
+              </motion.div>
+
               {product.images.length > 1 && (
                 <>
                   <button 
                     onClick={(e) => { e.stopPropagation(); prevImage(); }}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white rounded-full shadow-lg opacity-0 md:group-hover/gallery:opacity-100 transition-opacity hidden md:block"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/90 hover:bg-white rounded-full shadow-lg z-20 transition-all hover:scale-110 active:scale-95 hidden md:flex items-center justify-center border border-gray-100 group/btn"
                   >
-                    <ChevronLeft className="w-6 h-6" />
+                    <ChevronLeft className="w-5 h-5 text-gray-900" />
                   </button>
                   <button 
                     onClick={(e) => { e.stopPropagation(); nextImage(); }}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white rounded-full shadow-lg opacity-0 md:group-hover/gallery:opacity-100 transition-opacity hidden md:block"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/90 hover:bg-white rounded-full shadow-lg z-20 transition-all hover:scale-110 active:scale-95 hidden md:flex items-center justify-center border border-gray-100 group/btn"
                   >
-                    <ChevronRight className="w-6 h-6" />
+                    <ChevronRight className="w-5 h-5 text-gray-900" />
                   </button>
                   
                   {/* Mobile Dots Indicator */}
@@ -553,15 +555,15 @@ const ProductModal = ({ product, onClose, onAddToCart, cartItems }: { product: P
                   </div>
                 </>
               )}
-            </motion.div>
+            </div>
             {product.images.length > 1 && (
-              <div className="p-4 flex gap-2 overflow-x-auto scrollbar-hide">
+              <div className="p-3 md:p-4 flex gap-2 overflow-x-auto scrollbar-hide bg-white/30 border-t border-gray-100">
                 {product.images.map((img, idx) => (
                   <button 
                     key={idx} 
                     onClick={() => setActiveImage(idx)}
                     className={cn(
-                      "w-12 h-12 md:w-16 md:h-16 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 flex items-center justify-center bg-white",
+                      "w-12 h-12 md:w-14 md:h-14 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 flex items-center justify-center bg-white",
                       activeImage === idx ? "border-black" : "border-transparent"
                     )}
                   >
